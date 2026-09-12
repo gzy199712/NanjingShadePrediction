@@ -161,12 +161,12 @@ def _planner_ready_teacher_generation(point_id: str, heading: int, hour: int) ->
         return None
     image_payload = base64.b64encode(teacher.read_bytes()).decode("ascii")
     guide_payload = base64.b64encode(guide.read_bytes()).decode("ascii") if guide.is_file() else None
-    return {
+    result = {
         "generation_available": True,
         "automatic_acceptance": True,
         "planner_review_required": False,
         "agent_state": "IMAGE2_TEACHER_REFERENCE_AVAILABLE",
-        "agent_explanation": "该南京点位命中500对Image2教师样本；直接展示教师参考结果，不调用已验证不足的本地扩散模型。",
+        "agent_explanation": "该南京点位命中Image2教师样本；直接展示教师参考结果，不调用已验证不足的本地扩散模型。",
         "realistic_tree_png_base64": image_payload,
         "overlay_png_base64": guide_payload,
         "selected_seed": row["pair_id"],
@@ -197,6 +197,15 @@ def _planner_ready_teacher_generation(point_id: str, heading: int, hour: int) ->
         "feedback_saved": False,
         "feedback_usage": "session_only_not_persisted",
     }
+    return attach_reference_thermal_estimate(
+        {
+            **result,
+            "shade_optimization_need": "需要评估",
+            "suggestion_regions": [{"type": "canopy_target", "pixel_ratio": float(row.get("compact_mask_ratio") or 0)}],
+        },
+        hour,
+        point_id,
+    )
 
 
 @lru_cache(maxsize=1)
@@ -327,7 +336,7 @@ def attach_reference_thermal_estimate(
         shade_gain = float(perf["effective_shade_gain"])
         delta_tmrt = float(perf["estimated_delta_tmrt_c"])
         delta_utci = float(perf["estimated_delta_utci_c"])
-        benefit_source = "nearest_morphology_point_model_response"
+        benefit_source = "matched_point_model_response" if known_point_id else "nearest_morphology_point_model_response"
     elif not eligible:
         return {
             **result,
@@ -343,11 +352,11 @@ def attach_reference_thermal_estimate(
         float(item.get("pixel_ratio", 0)) for item in result.get("suggestion_regions", [])
         if item.get("type") in {"canopy_target", "facility_review"}
     )
-    scale = 0.0 if need == "通常不需要" else max(.45, min(1.25, canopy_ratio / .08 if canopy_ratio else .45))
+    scale = 0.0 if need == "通常不需要" else max(.45, min(1.0, canopy_ratio / .08 if canopy_ratio else .45))
     shade_gain *= scale; delta_tmrt *= scale; delta_utci *= scale
     weather = planner_reference_weather(hour)
     estimate = {
-        "estimate_type": "nanjing_dinov2_morphology_transfer_reference",
+        "estimate_type": "nanjing_standardized_intervention_response" if known_point_id else "nanjing_dinov2_morphology_transfer_reference",
         "reference_point_id": reference_id,
         "reference_similarity": reference.get("nearest_morphology_similarity"),
         "scenario_weather": weather,
@@ -360,7 +369,11 @@ def attach_reference_thermal_estimate(
         "estimated_after_utci_c": round(float(point["utci"]) + delta_utci, 2),
         "benefit_source": benefit_source,
         "spatial_status": "known_nanjing_point" if known_point_id else ("user_coordinate_nearest_nanjing_point" if longitude is not None and latitude is not None else "unknown_upload_transferred_from_similar_nanjing_morphology"),
-        "claim_boundary": "相似城市形态与典型晴热天气下的参考估计，不是上传地点的实测或坐标级模拟。",
+        "claim_boundary": (
+            "训练模型对标准化遮阴干预的预评估，不是生成图像的实测或因果验证。"
+            if known_point_id
+            else "相似城市形态与典型晴热天气下的参考估计，不是上传地点的实测或坐标级模拟。"
+        ),
     }
     return {**result, "thermal_reference_estimate": estimate, "quantified_thermal_benefit_available": True}
 

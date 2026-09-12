@@ -99,6 +99,41 @@ python streetscape/scripts/image2_generation_interface.py next
 python streetscape/scripts/image2_generation_interface.py register --pair-id <ID> --generated-image <FILE>
 ```
 
+### 导入 Image2 教师样本并进行模型预评估
+
+`import_image2_teacher_examples.py` 按 `point_id` 和 `heading` 将外部 Image2
+教师样本匹配到南京点位，并关联训练模型的标准化遮阴干预响应。外部影像和生成的表格均为本地资料，已由
+`.gitignore` 排除，不提交到 GitHub。
+
+输入包括教师样本的 `planner_ready_manifest.csv`，以及包含以下文件的热性能结果目录：
+
+- `point_benefit_summary.csv`
+- `point_hour_benefits.csv.gz`
+- `summary.json`
+
+先检查匹配关系和影像完整性，再生成本地示例：
+
+```powershell
+python streetscape/scripts/import_image2_teacher_examples.py `
+  --teachers "D:\path\to\planner_ready_manifest.csv" `
+  --benefits "D:\path\to\planner_citywide_performance" `
+  --check
+
+python streetscape/scripts/import_image2_teacher_examples.py `
+  --teachers "D:\path\to\planner_ready_manifest.csv" `
+  --benefits "D:\path\to\planner_citywide_performance" `
+  --overwrite
+```
+
+结果写入 `streetscape/data/generation/stage_69_planner_ready_generation_package/`；其中
+`example_manifest.csv` 是本地示例清单，`teacher_model_pre_evaluation.csv` 是教师样本与模型响应的关联表。
+本次本地运行匹配了 1,000 对样本，其中 250 对满足标准化干预评估条件，并选取 12 对作为
+train、val、test 示例。250 对可评估样本的平均预估为 Shade `+0.1553`、Tmrt `-2.73 °C`、
+UTCI `-0.63 °C`。
+
+这些数值来自训练模型对标准化遮阴干预的预评估，并非从生成图像像素重新提取的指标，也不是实测验证或
+场地级因果效应。生成图像在本项目中用于方案展示，模型训练集上的测试指标用于说明预评估可信度边界。
+
 ## 技术说明
 
 完整数据流见 `PIPELINE_SUMMARY.md`；字段定义见 `docs/DATA_DICTIONARY.md` 和 `docs/MODEL_INPUT_SPEC.md`。
