@@ -1,0 +1,29 @@
+phase:
+  name: Nanjing multimodal case RAG index
+  step: stage_42c
+
+inputs:
+  case_library: streetscape/data/agent/stage_42_multimodal_case_library/multimodal_case_library.csv.gz
+
+outputs:
+  directory: streetscape/data/agent/stage_42c_multimodal_rag_index
+  report: streetscape/reports/STAGE_42C_MULTIMODAL_RAG_INDEX.md
+
+model:
+  model_id: Qwen/Qwen3-VL-Embedding-2B
+  source: https://huggingface.co/Qwen/Qwen3-VL-Embedding-2B
+  license: Apache-2.0
+  dtype: bfloat16
+  output_dimension: 1024
+  instruction: Retrieve Nanjing street-view cases with similar active-travel visibility, road-access constraints, and evidence reliability.
+
+runtime:
+  device: cuda
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  maximum_peak_vram_gib: 7.8
+
+quality_gates:
+  expected_cases: 300
+  minimum_top1_label_accuracy: 0.70
+  minimum_top5_label_precision: 0.60

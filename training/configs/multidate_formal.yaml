@@ -1,0 +1,80 @@
+project:
+  root: ../..
+  training_data: data/training_data
+  scope: 14 summer hot-weather dates, 2024-07-05 to 2024-08-31
+
+inputs:
+  manifest: multiweather/step115_spatiotemporal_split/training_manifest_spatiotemporal.csv
+  semantic_features: static/semantic_features_8975.csv
+  static_feature_schema: static/static_feature_schema.json
+  dino_mean_features: static/dinov2_mean_features_8975.csv
+  dino_window_features: static/dinov2_window_features.npy
+  dino_window_index: static/dinov2_window_index.csv
+  dynamic_conditions: multiweather/step114_training_tables/dynamic_conditions_multidate.csv
+  labels: multiweather/step114_training_tables/point_hour_labels_multidate.csv
+  spatial_split: splits/spatial_split_assignments.csv
+  model_input_spec: manifest/model_input_spec.yaml
+  model_target_spec: manifest/model_target_spec.yaml
+  training_data_schema: manifest/training_data_schema.json
+  overlap_pairs_qc: artifacts/intermediate/pipeline_records/steps/step7_buffer_overlap/buffer_overlap_pairs.csv
+
+preflight:
+  output_dir: training/reports/multidate_training
+
+runtime:
+  device: cuda
+  mixed_precision: true
+  pin_memory: true
+
+training:
+  checkpoint_root: training/checkpoints/multidate_full
+  metrics_root: training/metrics/multidate_full
+  scaler_path: training/cache/scalers/multidate_full_train_scalers.json
+  log_root: training/logs/multidate_full
+  seeds: [42, 52, 62, 72, 82]
+  optimizer: AdamW
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  batch_size: 256
+  num_workers: 4
+  max_epochs: 100
+  early_stopping_patience: 12
+  early_stopping_min_delta: 0.0001
+  gradient_clip_norm: 1.0
+  dropout: 0.1
+  scheduler: ReduceLROnPlateau
+  lambda_shade: 1.0
+  lambda_tmrt: 1.0
+  train_partition: train
+  model_selection_partition: validation_unseen_points_unseen_weather
+  frozen_test_partitions:
+    - test_unseen_points_seen_weather
+    - test_seen_points_unseen_weather
+    - test_unseen_points_unseen_weather
+
+model:
+  directional_input_dim: 768
+  directional_hidden_dim: 256
+  attention_heads: 8
+  semantic_hidden_dim: 64
+  global_dino_hidden_dim: 128
+  dynamic_hidden_dim: 256
+  fusion_hidden_dims: [512, 256]
+
+evaluation:
+  prediction_root: training/predictions/multidate_test
+  metrics_dir: training/metrics/multidate_evaluation
+  report_dir: training/reports/multidate_evaluation
+  attention_path: training/predictions/multidate_test/test_attention_weights.npy
+  attention_index_path: training/predictions/multidate_test/test_attention_index.csv
+  batch_size: 256
+  num_workers: 4
+  checkpoint_kind: best
+  ensemble_standard_deviation_ddof: 0
+  tmrt_quantile_bins: 5
+  utci_package: utci
+  utci_version: 1.0.0
+  test_views:
+    unseen_points_seen_weather: test_unseen_points_seen_weather
+    seen_points_unseen_weather: test_seen_points_unseen_weather
+    unseen_points_unseen_weather: test_unseen_points_unseen_weather

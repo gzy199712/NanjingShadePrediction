@@ -1,0 +1,86 @@
+rule_version: phase_g8_interface_approved_v1
+status: FORMAL_INTERFACE_RUN_AND_QC_PASS
+
+interface:
+  protocol: validated_json_tools
+  language_default: zh-CN
+  llm_role:
+    - parse_natural_language_to_structured_parameters
+    - call_validated_tools
+    - explain_route_tradeoffs
+  llm_prohibited:
+    - predict_thermal_environment
+    - modify_route_costs
+    - repair_topology
+    - invent_access_rules
+    - bypass_schema_validation
+
+tools:
+  - geocode_place
+  - snap_origin_destination
+  - route
+  - compare_routes
+  - summarize_route
+  - export_route_map
+
+coordinate_inputs:
+  accepted_crs: [EPSG:4326, EPSG:32650]
+  internal_crs: EPSG:32650
+  transform_method: GDAL_OSR
+  maximum_snap_distance_m: 100
+
+routing_defaults:
+  mode: walk
+  objective: risk_aware
+  algorithm: astar
+  hour_policy: explicit_required
+  default_max_detour_ratio: 0.20
+  user_may_override_max_detour_ratio: true
+  maximum_accepted_detour_ratio: 1.00
+  uncertainty_weight: 1.0
+  expose_fallback_lengths: true
+  expose_prediction_uncertainty: true
+  disclose_shared_mode_topology: true
+
+geocoding:
+  status: LOCAL_GAZETTEER_READY
+  local_gazetteer_available: true
+  strategy: offline_local_gazetteer
+  source: geofabrik_openstreetmap_jiangsu
+  source_url: https://download.geofabrik.de/asia/china/jiangsu-latest.osm.pbf
+  source_license_url: https://www.openstreetmap.org/copyright
+  gazetteer_path: routing/data/gazetteer/built/nanjing_local_gazetteer.gpkg
+  alias_index_path: routing/data/gazetteer/built/gazetteer_aliases.csv
+  source_sha256: fdc7ae60671f6e155acc7051ffd29f1cc9cf971d09bccc223021887a363c8234
+  runtime_external_requests: false
+  external_provider: null
+  external_api_key_environment_variable: null
+  ambiguity_policy: return_ranked_candidates_and_require_selection
+  no_result_policy: request_coordinate_or_more_specific_place
+  never_silently_guess: true
+
+privacy:
+  exact_location_log_policy: do_not_persist
+  retain_request_id: true
+  retain_aggregate_runtime_metrics: true
+  external_geocoder_disclosure_required: true
+
+service:
+  initial_delivery: python_tool_functions_and_cli
+  http_api_required_for_initial_delivery: false
+  fastapi_installed: false
+  do_not_install_dependencies_during_check: true
+  interface_module: routing/src/route_interface.py
+  cli_entrypoint: routing/scripts/Step29_route_cli.py
+  formal_summary: routing/data/interface/step29_formal_summary.json
+  independent_qc: routing/data/interface/step29_formal_independent_qc.json
+  ready_for_phase_g9: true
+
+approval:
+  approved: true
+  approved_by: user
+  approved_at: 2026-07-26T15:14:00+08:00
+  formal_run_completed: true
+  independent_qc_passed: true
+  pending_decisions:
+    []

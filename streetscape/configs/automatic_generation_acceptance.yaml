@@ -1,0 +1,32 @@
+phase:
+  name: Automatic generated-panorama acceptance
+  step: stage_47
+
+inputs:
+  agent_state: streetscape/data/agent/stage_46b_panorama_tree_generation_agent/agent_state.json
+  generation_results: streetscape/data/agent/stage_46b_panorama_tree_generation_agent/generation_results.csv
+
+model:
+  semantic: models/facebook_mask2former-swin-large-mapillary-vistas-semantic
+
+outputs:
+  directory: streetscape/data/agent/stage_47_automatic_generation_acceptance
+  report: streetscape/reports/STAGE_47_AUTOMATIC_GENERATION_ACCEPTANCE.md
+
+runtime:
+  device: cuda
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  analysis_width: 1024
+  analysis_height: 256
+  maximum_peak_vram_gib: 7.8
+
+quality_gates:
+  minimum_vegetation_ratio_increase: 0.002
+  minimum_svf_reduction: 0.001
+  maximum_road_ratio_loss: 0.02
+  maximum_building_ratio_loss: 0.02
+  maximum_building_ratio_increase: 0.005
+  require_technical_pass: true
+  require_north_seam_unchanged: true
+  require_outside_mask_exact: true

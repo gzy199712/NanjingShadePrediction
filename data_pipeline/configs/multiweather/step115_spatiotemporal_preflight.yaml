@@ -1,0 +1,62 @@
+project_root: .
+
+inputs:
+  manifest: data/training_data/multiweather/step114_training_tables/training_manifest_multidate.csv
+  labels: data/training_data/multiweather/step114_training_tables/point_hour_labels_multidate.csv
+  dynamic_conditions: data/training_data/multiweather/step114_training_tables/dynamic_conditions_multidate.csv
+  date_metrics: data/training_data/multiweather/step112_era5_weather_selection/selected_representative_weather_dates.csv
+  spatial_split: data/training_data/splits/spatial_split_assignments.csv
+  semantic_features: data/training_data/static/semantic_features_8975.csv
+  dino_mean_features: data/training_data/static/dinov2_mean_features_8975.csv
+  dino_window_features: data/training_data/static/dinov2_window_features.npy
+  model_input_spec: data/training_data/manifest/model_input_spec.yaml
+
+outputs:
+  data_directory: data/training_data/multiweather/step115_spatiotemporal_split
+  record_directory: artifacts/intermediate/pipeline_records/steps/step115_spatiotemporal_preflight
+
+temporal_split:
+  policy: frozen_explicit_representative_weather_split_v1
+  train_dates:
+    - 2024-07-05
+    - 2024-07-08
+    - 2024-07-21
+    - 2024-07-28
+    - 2024-07-29
+    - 2024-08-06
+    - 2024-08-11
+    - 2024-08-12
+    - 2024-08-22
+    - 2024-08-24
+  validation_dates:
+    - 2024-07-31
+    - 2024-08-15
+  test_dates:
+    - 2024-08-04
+    - 2024-08-31
+  rationale:
+    validation: One typical hot-clear day and one lower-temperature humid day.
+    test: One extreme-hot clear day and one late-period humid day; frozen before model fitting.
+
+expected:
+  points: 8975
+  hours_per_date: 13
+  dates: 14
+  rows: 1633450
+  spatial_points:
+    train: 6282
+    validation: 1347
+    test: 1346
+
+runtime:
+  device: cuda
+  batch_size: 128
+  num_workers: 4
+  mixed_precision: true
+  chunk_rows: 100000
+  primary_seeds: [42, 52, 62]
+  full_model_seeds: [42, 52, 62, 72, 82]
+  original_train_rows: 81666
+  original_minutes_per_seed: 4.05
+  assumed_epochs: 14
+  primary_ablation_count: 11

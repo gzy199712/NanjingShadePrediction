@@ -1,0 +1,25 @@
+step: stage_36
+target_journal: Computers, Environment and Urban Systems
+backend: python_matplotlib
+language: English
+outputs:
+  directory: author_workspace/publication/ceus/figures
+  source_data: author_workspace/publication/ceus/source_data
+  width_mm: 183
+  formats: [png, pdf, svg, tiff]
+  png_dpi: 400
+  tiff_dpi: 600
+route_case:
+  origin_name: Hanzhongmen
+  destination_name: Xuanwumen
+  origin_lon_lat: [118.7619971, 32.0446725]
+  destination_lon_lat: [118.7785228, 32.0739944]
+  hour: 17
+  mode: walk
+  maximum_detour_ratio: 0.40
+  service_url: http://127.0.0.1:8765
+scientific_boundaries:
+  - No generated or altered manuscript imagery.
+  - Planner overlays are screening evidence, not construction design.
+  - Route reliability is reported as a metric, not a fourth route objective.
+

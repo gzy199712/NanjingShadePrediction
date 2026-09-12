@@ -1,0 +1,68 @@
+rule_version: phase_g2_two_class_draft_v2
+status: APPROVED
+source: Phase G1 road_class_inventory.csv
+objective: screen roads requiring shade and thermal-comfort assessment
+missing_access_fields: [access, foot, bicycle, surface, z_level, level]
+
+output_classes:
+  thermal_comfort_relevant:
+    description: Roads potentially used by pedestrians or cyclists; priority for shade and thermal-comfort assessment.
+    priority: true
+  motor_vehicle_only:
+    description: Motor-vehicle-only roads excluded from pedestrian/cyclist thermal-comfort assessment.
+    priority: false
+
+global_rules:
+  unknown_class_policy: thermal_comfort_relevant
+  preserve_source_features: true
+  delete_roads: false
+  exactly_two_output_classes: true
+
+# Motorway and trunk roads are treated as motor-vehicle-only by class.
+# Primary/secondary/tertiary roads are treated as motor-vehicle-only only where
+# bridge, tunnel or nonzero layer indicates an elevated/grade-separated structure.
+# Active-travel classes remain thermal-comfort-relevant even on bridges/tunnels.
+motor_vehicle_only_rules:
+  always_by_fclass:
+    - motorway
+    - motorway_link
+    - trunk
+    - trunk_link
+  when_grade_separated:
+    - primary
+    - primary_link
+    - secondary
+    - secondary_link
+    - tertiary
+    - tertiary_link
+  grade_separated_when:
+    bridge_true: true
+    tunnel_true: true
+    nonzero_layer: true
+
+thermal_comfort_relevant_rules:
+  default_for_all_other_roads: true
+  explicitly_preserve_even_when_grade_separated:
+    - footway
+    - pedestrian
+    - steps
+    - cycleway
+    - path
+    - track
+    - track_grade1
+    - track_grade2
+    - track_grade3
+    - track_grade4
+    - track_grade5
+    - bridleway
+    - living_street
+    - residential
+    - service
+    - unclassified
+    - unknown
+
+approval:
+  approved: true
+  approved_by: user
+  approved_at: "2026-07-26T12:24:38+08:00"
+  notes: User explicitly approved the two-class rules and formal Step23 run.

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbanshade.local/schemas/planner-agent-trace-v2.json",
+  "title": "UrbanShade tool-constrained planner agent trace",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "point_id", "tool_calls", "retrieved_cases", "agent_proposal", "policy_decision", "warnings"],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "point_id": {"type": "string", "minLength": 1},
+    "tool_calls": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tool", "status", "result"],
+        "properties": {
+          "tool": {"enum": ["road_access_gate", "measure_svf", "inspect_semantic_depth", "retrieve_similar_cases", "inspect_phenology"]},
+          "status": {"enum": ["PASS", "STOP", "UNCERTAIN"]},
+          "result": {"type": "string", "minLength": 1, "maxLength": 500}
+        }
+      }
+    },
+    "retrieved_cases": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["case_id", "case_label", "similarity"],
+        "properties": {
+          "case_id": {"type": "string"},
+          "case_label": {"enum": ["STRONG_WALKABLE_POSITIVE", "MOTOR_ONLY_NEGATIVE", "AMBIGUOUS_WALKABLE_REVIEW"]},
+          "similarity": {"type": "number", "minimum": -1, "maximum": 1}
+        }
+      }
+    },
+    "agent_proposal": {"$ref": "planner-agent-response-v1.json"},
+    "policy_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "final_action", "stop_reason", "generation_unlocked", "next_tool"],
+      "properties": {
+        "state": {"enum": ["EXCLUDED", "NO_INTERVENTION", "NEEDS_LOCALIZATION", "PHENOLOGY_REVIEW", "EXISTING_TREE_REVIEW", "READY_FOR_LAYOUT", "PLANNER_REVIEW"]},
+        "final_action": {"enum": ["maintain", "tree_first", "planner_review", "abstain"]},
+        "stop_reason": {"type": "string", "minLength": 1, "maxLength": 300},
+        "generation_unlocked": {"const": false},
+        "next_tool": {"enum": ["none", "locate_walkable_area", "detect_existing_canopy", "propose_tree_layout", "planner_review"]}
+      }
+    },
+    "warnings": {"type": "array", "items": {"type": "string", "maxLength": 300}}
+  }
+}

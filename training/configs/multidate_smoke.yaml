@@ -1,0 +1,56 @@
+project:
+  root: ../..
+  training_data: data/training_data
+
+inputs:
+  manifest: multiweather/step115_spatiotemporal_split/training_manifest_spatiotemporal.csv
+  semantic_features: static/semantic_features_8975.csv
+  static_feature_schema: static/static_feature_schema.json
+  dino_mean_features: static/dinov2_mean_features_8975.csv
+  dino_window_features: static/dinov2_window_features.npy
+  dino_window_index: static/dinov2_window_index.csv
+  dynamic_conditions: multiweather/step114_training_tables/dynamic_conditions_multidate.csv
+  labels: multiweather/step114_training_tables/point_hour_labels_multidate.csv
+  spatial_split: splits/spatial_split_assignments.csv
+  model_input_spec: manifest/model_input_spec.yaml
+  model_target_spec: manifest/model_target_spec.yaml
+  training_data_schema: manifest/training_data_schema.json
+  overlap_pairs_qc: artifacts/intermediate/pipeline_records/steps/step7_buffer_overlap/buffer_overlap_pairs.csv
+
+preflight:
+  output_dir: training/reports/multidate_smoke
+
+smoke_test:
+  seed: 42
+  train_point_count: 64
+  validation_point_count: 32
+  benchmark_batch_sizes: [128, 256]
+  warmup_batches: 5
+  timed_batches: 20
+  smoke_epochs: 2
+  num_workers: 4
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  gradient_clip_norm: 1.0
+  report_dir: training/reports/multidate_smoke
+  metrics_dir: training/metrics/multidate_smoke
+  record_dir: artifacts/intermediate/pipeline_records/steps/step116_multidate_cuda_smoke
+
+runtime:
+  device: cuda
+  mixed_precision: true
+  pin_memory: true
+
+training:
+  lambda_shade: 1.0
+  lambda_tmrt: 1.0
+  dropout: 0.1
+
+model:
+  directional_input_dim: 768
+  directional_hidden_dim: 256
+  attention_heads: 8
+  semantic_hidden_dim: 64
+  global_dino_hidden_dim: 128
+  dynamic_hidden_dim: 256
+  fusion_hidden_dims: [512, 256]

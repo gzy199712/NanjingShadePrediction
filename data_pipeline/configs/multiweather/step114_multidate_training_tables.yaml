@@ -1,0 +1,20 @@
+project_root: .
+outdoor_units: artifacts/intermediate/pipeline_records/steps/step9_outdoor_units/OnlyPoints_Outdoor50m.shp
+overlap_groups: artifacts/intermediate/pipeline_records/steps/step10_dynamic_labels/overlap_color_groups.csv
+reference_labels: data/training_data/dynamic/point_hour_labels_20240729.csv
+reference_dynamic: data/training_data/dynamic/dynamic_conditions_20240729.csv
+reference_manifest: data/training_data/manifest/training_manifest.csv
+spatial_splits: data/training_data/splits/spatial_split_assignments.csv
+selected_dates: data/training_data/multiweather/step112_era5_weather_selection/selected_representative_weather_dates.csv
+era5_hourly: data/training_data/multiweather/step112_era5_weather_selection/era5_hourly_nanjing_202407_202408.csv
+solweig_results: data/training_data/multiweather/step113_solweig_gpu
+reference_tmrt: data/raw/SOLWEIG20240729/Tmrt/TMRT_0729_10m.tif
+reference_utci: data/raw/SOLWEIG20240729/UTCI/UTCI_0729_10m.tif
+reference_grid: D:/Desktop/NJSummerWinter/UMEP_data_Ready_to_process/TmrtData10m/BuildingDSM10m_results.tif
+output_directory: data/training_data/multiweather/step114_training_tables
+process_directory: artifacts/intermediate/pipeline_records/steps/step114_training_tables
+geometry_reference_date: '2024-07-29'
+hours: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+expected_points: 8975
+zone_groups: 2
+nodata_value: -9999.0

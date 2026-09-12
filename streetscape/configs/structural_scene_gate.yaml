@@ -1,0 +1,20 @@
+phase:
+  name: Multimodal structural scene gate
+  step: stage_45b
+inputs:
+  layout_directory: streetscape/data/agent/stage_45_tree_first_layout
+  windows_directory: streetscape/data/agent/stage_44_perspective_windows
+  benchmark: streetscape/data/agent/stage_37_foundation/planner_agent_benchmark_manifest.csv
+outputs:
+  directory: streetscape/data/agent/stage_45b_structural_scene_gate
+  report: streetscape/reports/STAGE_45B_STRUCTURAL_SCENE_GATE.md
+model:
+  id: Qwen/Qwen3-VL-2B-Instruct
+runtime:
+  device: cuda
+  dtype: bfloat16
+  max_new_tokens: 20
+  maximum_peak_vram_gib: 7.8
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+labels: [GROUND_STREET, BRIDGE_OR_ELEVATED, TUNNEL_OR_COVERED, CONSTRUCTION_OR_BLOCKED, UNCERTAIN]

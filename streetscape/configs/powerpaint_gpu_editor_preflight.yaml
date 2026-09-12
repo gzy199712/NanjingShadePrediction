@@ -1,0 +1,31 @@
+phase:
+  name: PowerPaint full-GPU image editor preflight
+  step: stage_46
+
+models:
+  base: artifacts/retired/failed_experiment_dependencies/models_counterfactual/stable-diffusion-v1-5-inpainting
+  powerpaint: artifacts/retired/failed_experiment_dependencies/models_counterfactual/powerpaint-v1
+  code: artifacts/retired/failed_experiment_dependencies/third_party/powerpaint
+  model_revision: b4174b7cade590ab185dbdcfa09eee2c0f63410b
+  code_revision: 5b4c3d52291709fcec2a1870d987da693fd3549c
+
+outputs:
+  directory: streetscape/data/agent/stage_46_powerpaint_gpu_preflight
+  report: streetscape/reports/STAGE_46_POWERPAINT_GPU_EDITOR_PREFLIGHT.md
+
+generation:
+  seed: 20260817
+  inference_steps: 20
+  guidance_scale: 7.5
+  fitting_degree: 0.85
+  width: 512
+  height: 512
+  prompt: continuous row of tall mature leafy street trees with broad connected green canopies and few slender trunks rooted beside a public sidewalk, realistic street photograph P_shape
+  context_prompt: continuous row of tall mature leafy street trees shading a public sidewalk, realistic urban street photograph P_ctxt
+  negative_prompt: shrubs, hedge, tiny trees, many trunks, trees in vehicle lanes, bridge, tunnel, text, logo, painting, blurry, low quality
+
+runtime:
+  device: cuda:0
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  maximum_peak_vram_gib: 7.8

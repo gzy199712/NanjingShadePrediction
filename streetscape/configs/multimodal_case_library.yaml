@@ -1,0 +1,29 @@
+phase:
+  name: Nanjing multimodal active-travel case library
+  step: stage_42
+
+inputs:
+  decisions: streetscape/data/planning/stage_32_citywide_final_decisions/citywide_final_planning_decisions.csv.gz
+  view_metrics: streetscape/data/planning/stage_31_integrated_streaming_formal/view_metrics.csv.gz
+  image_metadata: artifacts/intermediate/pipeline_records/steps/step0_check/image_metadata.csv
+  raw_direction_directory: data/raw/NanjingStreetViewImages_12Directions_pitch0
+
+outputs:
+  directory: streetscape/data/agent/stage_42_multimodal_case_library
+  report: streetscape/reports/STAGE_42_MULTIMODAL_CASE_LIBRARY.md
+
+library:
+  strong_walkable_positive: 100
+  motor_only_negative: 100
+  ambiguous_walkable_review: 100
+  seed: 20260817
+
+rules:
+  positive_lower_half_probability_minimum: 0.02
+  positive_retained_ratio_minimum: 0.005
+  positive_ground_score_minimum: 0.60
+  positive_obstacle_probability_maximum: 0.20
+  ambiguous_class: AUTO_PLANNING_ABSTAIN_INSUFFICIENT_VISIBLE_WALKABLE
+  motor_class: MOTOR_VEHICLE_ONLY_EXCLUDED
+  prohibited_label_sources: [qwen3_vl_free_text, failed_vlm_heading_screen, manual_subjective_label]
+

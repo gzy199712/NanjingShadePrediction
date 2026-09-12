@@ -1,0 +1,29 @@
+rule_version: phase_g5_thermal_edge_draft_v1
+status: DRAFT_NOT_APPROVED
+
+hours: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+
+direct_aggregation:
+  method: along_edge_voronoi_weighted_mixture
+  use_projection_position: true
+  preserve_point_prediction_mean_and_std: true
+  minimum_weight_m: 0.001
+
+interpolation_check:
+  maximum_one_hop_distance_m: 200.0
+  require_shared_endpoint: true
+  require_same_fclass: true
+  require_same_bridge: true
+  require_same_tunnel: true
+  require_same_layer: true
+  topology_connector_inherits_adjacent_thermal_edge: true
+  cross_large_intersection: false
+  formal_interpolation_performed: false
+
+unknown_policy: retain_unknown_never_zero_fill
+
+approval:
+  approved: false
+  approved_by: null
+  approved_at: null
+  notes: null

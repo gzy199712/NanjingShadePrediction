@@ -1,0 +1,41 @@
+phase:
+  name: Tool-constrained panorama tree generation agent
+  step: stage_46b
+
+inputs:
+  editor_preflight: streetscape/data/agent/stage_46_powerpaint_gpu_preflight/summary.json
+  layout_directory: streetscape/data/agent/stage_45_tree_first_layout
+  structural_qc: streetscape/data/agent/stage_45b_structural_scene_gate/structural_scene_qc.csv
+  benchmark: streetscape/data/agent/stage_37_foundation/planner_agent_benchmark_manifest.csv
+  windows_directory: streetscape/data/agent/stage_44_perspective_windows
+
+models:
+  base: artifacts/retired/failed_experiment_dependencies/models_counterfactual/stable-diffusion-v1-5-inpainting
+  powerpaint: artifacts/retired/failed_experiment_dependencies/models_counterfactual/powerpaint-v1
+  code: artifacts/retired/failed_experiment_dependencies/third_party/powerpaint
+
+outputs:
+  directory: streetscape/data/agent/stage_46b_panorama_tree_generation_agent
+  report: streetscape/reports/STAGE_46B_PANORAMA_TREE_GENERATION_AGENT.md
+
+generation:
+  seeds: [20260817, 20260829]
+  inference_steps: 32
+  guidance_scale: 7.5
+  fitting_degree: 0.85
+  mask_feather_pixels: 10
+  prompt: continuous row of tall mature leafy street trees with broad connected green crowns, high raised canopies, very few slender trunks rooted beside the sidewalk, correct perspective scale, realistic Nanjing street photograph P_shape
+  context_prompt: tall mature avenue trees forming a continuous shaded canopy over a public sidewalk, matching existing lighting perspective and urban materials P_ctxt
+  negative_prompt: shrubs, hedge, topiary, tiny trees, short bushes, excessive trunks, trees rooted in vehicle lanes, warped buildings, duplicate vehicles, bridge, tunnel, text, logo, illustration, blurry, low quality
+
+runtime:
+  device: cuda:0
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  maximum_peak_vram_gib: 7.8
+
+quality_gates:
+  require_ground_street: true
+  require_layout_ready: true
+  preserve_outside_mask_exactly: true
+  preserve_north_seam_exactly: true

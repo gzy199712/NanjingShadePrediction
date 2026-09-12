@@ -1,0 +1,33 @@
+step: stage_04
+status: formal_preflight
+method: strict_single_source_gpu_optimal_seam
+inputs:
+  image_metadata: artifacts/intermediate/pipeline_records/steps/step0_check/image_metadata.csv
+  raw_perspective_dir: data/raw/NanjingStreetViewImages_12Directions_pitch0
+camera:
+  source_width: 512
+  source_height: 512
+  fov_degrees: 90.0
+panorama:
+  width: 2048
+  height: 512
+  x0_direction: north
+seam:
+  search_half_width_degrees: 8.0
+  rgb_cost_weight: 1.0
+  gradient_cost_weight: 0.35
+  geometric_warp: false
+  cross_source_rgb_blending: false
+  unique_source_ownership: true
+runtime:
+  projection_device: cuda:0
+  seam_cost_device: cuda:0
+  cpu_fallback: false
+outputs:
+  directory: streetscape/data/panorama/stage_04_formal
+  images: streetscape/data/panorama/stage_04_formal/images
+  ownership: streetscape/data/panorama/stage_04_formal/ownership
+  qc: streetscape/data/panorama/stage_04_formal/qc.csv
+  metadata: streetscape/data/panorama/stage_04_formal/metadata.csv
+  failures: streetscape/data/panorama/stage_04_formal/failed_files.csv
+  log: streetscape/logs/stage_04_formal.log

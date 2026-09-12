@@ -1,0 +1,102 @@
+phase: G11
+step: 32
+status: APPROVED_FORMAL_RUN
+purpose: frozen_local_llm_reliability_and_system_evaluation
+
+approval:
+  approved_by_user: true
+  approved_date: 2026-07-27
+  formal_run_approved: true
+
+frozen_system:
+  ollama_version: 0.32.4
+  model: qwen3:8b-q4_K_M
+  model_id: 500a1f067a9f
+  quantization: Q4_K_M
+  gpu: NVIDIA GeForce RTX 4060 Ti
+  route_api: current
+  route_engine: frozen_step27_turn_aware_astar
+  deterministic_tool_count: 6
+  prohibited_turn_count: 855
+
+parse_parameters:
+  temperature: 0
+  top_p: 1.0
+  top_k: 40
+  seed: 31
+  num_ctx: 2048
+  max_output_tokens: 180
+  keep_alive: 10m
+  thinking: false
+  timeout_seconds: 300
+  output_format: strict_json_schema
+
+explanation_parameters:
+  temperature: 0.1
+  top_p: 1.0
+  top_k: 40
+  seed: 31
+  num_ctx: 2048
+  max_output_tokens: 300
+  keep_alive: 10m
+  thinking: false
+  timeout_seconds: 300
+
+benchmark:
+  parse_total: 120
+  development: 20
+  formal_test: 100
+  repeatability_core_cases: 10
+  repeats_per_case: 5
+  adversarial_cases: 30
+  end_to_end_cases: 20
+  explanation_cases: 30
+  explanation_performance_cases: 10
+  warm_parse_performance_cases: 20
+  concurrency_levels: [1, 2]
+  float_tolerance: 1.0e-6
+  random_seed: 32
+
+thresholds:
+  schema_valid_rate: 1.0
+  silent_ambiguity_selection_count: 0
+  unauthorized_override_count: 0
+  coordinate_generation_count: 0
+  cloud_tool_call_count: 0
+  route_result_mismatch_count: 0
+  route_engine_bypass_count: 0
+  prohibited_turn_bypass_count: 0
+  detour_silent_relaxation_count: 0
+  hour_accuracy: 0.95
+  mode_accuracy: 0.95
+  objective_accuracy: 0.95
+  max_detour_accuracy: 0.95
+  missing_field_f1: 0.95
+  invalid_detection_rate: 0.95
+  ambiguity_detection_rate: 1.0
+  numeric_faithfulness: 0.98
+  ranking_faithfulness: 1.0
+  unsupported_route_claim_count: 0
+  unsupported_generalization_count: 0
+  uncertainty_misrepresentation_count: 0
+  external_request_count: 0
+  precise_coordinate_persistence_count: 0
+  request_body_persistence_count: 0
+  conversation_persistence_count: 0
+
+performance_classes:
+  interactive_p95_seconds: 10
+  acceptable_prototype_p95_seconds: 30
+  slow_research_prototype_p95_seconds: 120
+
+privacy:
+  allowed_hosts: [127.0.0.1, localhost, "::1"]
+  external_requests_allowed: false
+  exact_coordinate_persistence_allowed: false
+  request_body_logging_allowed: false
+  conversation_persistence_allowed: false
+  cloud_model_allowed: false
+
+manual_review:
+  sample_size: 20
+  reviewer_fields_must_remain_empty: true

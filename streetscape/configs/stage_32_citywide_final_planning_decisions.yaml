@@ -1,0 +1,23 @@
+step: stage_32
+status: citywide_final_planning_decision_merge
+inputs:
+  cascade: streetscape/data/planning/stage_26_full_city_cascade/full_city_planning_screening.csv.gz
+  view_metrics: streetscape/data/planning/stage_31_integrated_streaming_formal/view_metrics.csv.gz
+  tree_detection_evidence: streetscape/data/planning/stage_31_integrated_streaming_formal/tree_detection_evidence.csv.gz
+  point_tree_evidence: streetscape/data/planning/stage_31_integrated_streaming_formal/point_season_aware_tree_evidence.csv
+  point_metrics: streetscape/data/planning/stage_31_integrated_streaming_formal/point_metrics.csv
+rules:
+  walkable_lower_half_probability_minimum: 0.01
+  walkable_retained_ratio_minimum: 0.002
+  minimum_walkable_directions: 2
+  require_adjacent_walkable_directions: true
+  sparse_tree_gvi_maximum: 0.10
+  sparse_tree_semantic_vegetation_maximum: 0.10
+  hard_leaf_off_months: [1, 2, 11, 12]
+  phenology_uncertain_months: [3]
+  tree_policy: TREE_FIRST
+  artificial_shade_policy: PLANNER_SUPPLEMENT_ONLY_NEVER_AUTOMATIC_PRIMARY
+outputs:
+  directory: streetscape/data/planning/stage_32_citywide_final_decisions
+  report: streetscape/reports/STAGE_32_CITYWIDE_FINAL_PLANNING_DECISIONS.md
+  log: streetscape/logs/stage_32_citywide_final_decisions.log

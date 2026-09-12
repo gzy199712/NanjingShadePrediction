@@ -1,0 +1,59 @@
+project_root: .
+
+inputs:
+  overall_metrics: training/metrics/multidate_ablation_evaluation/overall_metrics.csv
+  seed_metrics: training/metrics/multidate_ablation_evaluation/seed_metrics.csv
+  degradation_metrics: training/metrics/multidate_ablation_evaluation/degradation_vs_full_model.csv
+  prediction_directory: training/predictions/multidate_ablation_test
+
+outputs:
+  metrics_directory: training/metrics/multidate_ablation_reporting
+  figure_directory: training/figures/multidate_ablation
+  report_directory: training/reports/ablation_reporting
+  record_directory: artifacts/intermediate/pipeline_records/steps/step123_ablation_reporting
+
+bootstrap:
+  seed: 20240810
+  replicates: 2000
+  confidence_level: 0.95
+  unit: point_id_cluster_paired_across_models_conditional_on_frozen_test_weather
+
+reporting:
+  strict_view: unseen_points_unseen_weather
+  dpi: 300
+  formats: [png, pdf]
+
+variants:
+  - id: full_model_3seed
+    label: Full model
+    group: baseline
+  - id: no_global_dinov2
+    label: No global DINOv2
+    group: visual_semantic
+  - id: no_directional_dinov2
+    label: No directional DINOv2
+    group: visual_semantic
+  - id: no_semantic_structure
+    label: No semantic structure
+    group: visual_semantic
+  - id: no_solar_geometry
+    label: No solar geometry
+    group: weather
+  - id: no_thermodynamic_weather
+    label: No air temperature / RH
+    group: weather
+  - id: no_wind
+    label: No wind
+    group: weather
+  - id: no_shortwave_radiation
+    label: No shortwave radiation
+    group: weather
+  - id: mean_direction_pooling
+    label: Mean directional pooling
+    group: fusion_multitask
+  - id: no_azimuth_encoding
+    label: No azimuth encoding
+    group: fusion_multitask
+  - id: independent_prediction_heads
+    label: Independent prediction heads
+    group: fusion_multitask

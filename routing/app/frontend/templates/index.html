@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>南京城市遮荫决策平台</title>
+  <link rel="stylesheet" href="/static/style.css?build=current">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <header class="topbar">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>
+      </span>
+      <div>
+        <h1>南京遮荫导航</h1>
+        <p>热舒适路径与街景规划</p>
+      </div>
+    </div>
+    <nav class="workspace-nav" aria-label="功能分区" role="tablist">
+      <button class="workspace-tab active" data-workspace="route" role="tab" aria-selected="true">遮荫路径</button>
+      <button class="workspace-tab" data-workspace="planner" role="tab" aria-selected="false">街景规划</button>
+    </nav>
+    <div class="status" id="health-status" aria-live="polite"><span></span>正在加载本地引擎</div>
+  </header>
+
+  <section id="route-workspace" class="workspace active">
+  <main class="app-shell" id="main-content">
+    <aside class="control-panel">
+      <section class="panel-intro">
+        <p class="eyebrow">ROUTE PLANNER</p>
+        <h2>选择更舒适的出行路线</h2>
+        <p>输入起终点，比较最短、遮荫和热舒适三类路线。</p>
+      </section>
+
+      <details class="assistant-panel">
+        <summary class="assistant-heading">
+          <div>
+            <strong>用一句话设置行程</strong>
+            <small>可选 · 本地Qwen3</small>
+          </div>
+          <span class="assistant-badge" id="assistant-badge">检查中</span>
+        </summary>
+        <div class="assistant-content">
+          <textarea id="assistant-input" rows="3" maxlength="500"
+            placeholder="例如：下午2点从新街口步行到鼓楼，比较三类路线"></textarea>
+          <button class="assistant-button" id="assistant-parse">解析需求</button>
+          <p class="assistant-message" id="assistant-message">
+            仅在本机解析，不联网、不保存对话。解析后仍需确认起终点。
+          </p>
+        </div>
+      </details>
+
+      <div class="section-kicker"><span>1</span>起点与终点</div>
+
+      <div class="place-grid">
+        <div class="place-block">
+          <label for="origin-query">起点</label>
+          <div class="search-row">
+            <input id="origin-query" autocomplete="off" placeholder="例如：新街口">
+            <button class="small-button" id="origin-search">搜索</button>
+          </div>
+          <div class="place-actions">
+            <button class="map-pick-button" id="origin-map-pick">在地图上点选起点</button>
+            <button class="clear-place-button" id="clear-origin">清除起点</button>
+          </div>
+          <div class="candidates" id="origin-candidates" aria-live="polite"></div>
+        </div>
+        <div class="place-block">
+          <label for="destination-query">终点</label>
+          <div class="search-row">
+            <input id="destination-query" autocomplete="off" placeholder="例如：鼓楼">
+            <button class="small-button" id="destination-search">搜索</button>
+          </div>
+          <div class="place-actions">
+            <button class="map-pick-button" id="destination-map-pick">在地图上点选终点</button>
+            <button class="clear-place-button" id="clear-destination">清除终点</button>
+          </div>
+          <div class="candidates" id="destination-candidates" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="section-kicker"><span>2</span>出行偏好</div>
+      <div class="field-row compact-fields">
+        <label>出发时间
+          <select id="hour"></select>
+        </label>
+        <label>交通模式
+          <select id="mode">
+            <option value="walk">步行</option>
+            <option value="bike">骑行</option>
+            <option value="shared">步骑共享</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="preference-grid">
+        <div class="preference-field">
+          <label>优化目标
+            <select id="objective">
+              <option value="shortest" selected>最短距离</option>
+              <option value="shade">遮荫优先</option>
+              <option value="utci">UTCI热舒适优先</option>
+            </select>
+          </label>
+          <p class="field-help" id="objective-help">
+            最短距离：以总路程最短为首要目标，是最基础的路线基准。
+          </p>
+        </div>
+
+        <div class="slider-row preference-field">
+          <label for="detour">最大绕行率 <output id="detour-value">20%</output></label>
+          <input id="detour" type="range" min="0" max="100" value="20">
+          <p class="field-help">
+            允许相对最短路线增加的距离。调高可扩大遮荫或舒适路线的搜索空间。
+          </p>
+        </div>
+      </div>
+      <details class="parameter-guide">
+        <summary>如何选择参数？</summary>
+        <ul>
+          <li><strong>只想尽快到达：</strong>选择“最短距离”，并保持较低绕行率。</li>
+          <li><strong>希望多走阴凉处：</strong>选择“遮荫优先”，必要时逐步提高绕行率。</li>
+          <li><strong>关注综合热感受：</strong>选择“UTCI热舒适优先”。</li>
+          <li><strong>如何判断结果是否稳健：</strong>计算后查看三条路线各自的“模型可靠度”；它综合相对预测不确定性与低可靠性路段占比，但不替代路线目标。</li>
+        </ul>
+      </details>
+
+      <div class="section-kicker"><span>3</span>生成路线</div>
+      <div class="actions">
+        <button class="primary" id="compare-routes">比较三类路线</button>
+        <button class="secondary" id="single-route">仅计算所选路线</button>
+      </div>
+      <button class="text-button reset-request" id="clear-request">重置起终点与路线</button>
+      <div class="snap-status" id="snap-status" aria-live="polite">选择起终点后将自动检查路网连接。</div>
+
+      <details class="disclosure">
+        <summary>数据与适用范围</summary>
+        <p>当前采用多日期模型的2024-08-04极端高温晴天路径情景。模型训练覆盖2024年7—8月多个晴热天气日，并在独立日期与独立点位上验证；建筑、DSM和地图阴影仍使用2024-07-29几何。三种模式共享批准的主动交通候选网络。</p>
+      </details>
+    </aside>
+
+    <div class="panel-resizer" id="control-resizer" role="separator" aria-label="调整路线选择栏宽度" aria-orientation="vertical" tabindex="0"></div>
+    <section class="results-panel">
+      <div class="route-map-column">
+      <div class="map-card">
+        <div class="map-toolbar">
+          <div>
+            <p class="eyebrow">ROUTE MAP</p>
+            <h2 id="map-title">在左侧设置行程</h2>
+          </div>
+          <div class="map-tools">
+            <label class="layer-toggle" title="显示或隐藏研究区域内的全部建筑轮廓">
+              <input id="show-buildings" type="checkbox" checked>
+              建筑
+            </label>
+            <label class="layer-toggle" title="显示或隐藏研究区域内所选小时的SOLWEIG阴影">
+              <input id="show-shadows" type="checkbox" checked>
+              小时阴影
+            </label>
+            <button class="small-button" id="fit-routes">重置视野</button>
+          </div>
+        </div>
+        <div class="map-wrap">
+          <canvas id="route-map" tabindex="0" aria-label="本地路线地图；可用方向键平移，加减键缩放"></canvas>
+          <div class="zoom-controls" aria-label="地图缩放">
+            <button id="zoom-in" title="放大地图" aria-label="放大地图">＋</button>
+            <button id="zoom-out" title="缩小地图" aria-label="缩小地图">−</button>
+          </div>
+          <div class="north-arrow">N<br><span>↑</span></div>
+          <div class="scale-bar" id="scale-bar">—</div>
+          <div class="map-message" id="map-message" aria-live="polite">选择起点和终点后开始计算</div>
+        </div>
+        <div class="layer-status" id="layer-status">
+          全域道路与建筑常驻显示；缩放或拖动后自动按当前视野提高清晰度。小时阴影可单独开关，图层不改变路线计算。
+        </div>
+        <div class="legend" id="route-legend"></div>
+      </div>
+
+      <section class="warning-box" id="warnings" hidden></section>
+      <details class="metrics-details route-metrics-below-map" id="route-metrics-details" hidden>
+        <summary>查看完整路线指标</summary>
+        <div class="table-wrap">
+          <table id="comparison-table" hidden>
+          <thead>
+            <tr>
+              <th>显示</th><th>路线</th><th>距离</th><th>绕行</th><th>时间</th>
+              <th>遮荫</th><th>无荫暴露</th><th>平均Tmrt</th><th>最高Tmrt</th>
+              <th>平均UTCI</th><th>最高UTCI</th>
+              <th>模型可靠度</th><th>与最短重合</th><th>低可靠路段</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          </table>
+        </div>
+      </details>
+      <div class="summary-box" id="summary-box" hidden></div>
+      <div class="assistant-explain route-explain-below-map" id="assistant-explain-wrap" hidden>
+        <button class="small-button" id="assistant-explain">让本地模型解释路线权衡</button>
+        <p id="assistant-explanation"></p>
+      </div>
+      </div>
+
+      <div class="panel-resizer" id="map-resizer" role="separator" aria-label="调整地图与路线比较宽度" aria-orientation="vertical" tabindex="0"></div>
+
+      <section class="comparison-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ROUTE TRADE-OFFS</p>
+            <h2>路线比较</h2>
+          </div>
+          <div class="export-actions">
+            <select id="export-format">
+              <option value="png">PNG地图</option>
+              <option value="pdf">PDF地图</option>
+              <option value="geojson">GeoJSON</option>
+              <option value="csv">CSV</option>
+              <option value="file_geodatabase">OpenFileGDB</option>
+            </select>
+            <button class="small-button" id="export-route">导出所选路线</button>
+          </div>
+        </div>
+        <div class="empty-results" id="empty-results">路线结果将在这里并列展示，不会自动替你决定“最好”的路线。</div>
+        <div class="route-cards" id="route-cards"></div>
+      </section>
+    </section>
+  </main>
+  </section>
+
+  <section id="planner-workspace" class="workspace" hidden>
+    <main class="planner-shell">
+      <aside class="planner-control">
+        <p class="eyebrow">PLANNER STREETSCAPE SHADE</p>
+        <h2>街景图像遮荫优化</h2>
+        <p class="planner-lead">多模态规划Agent以单方位街景为判断单位，先排除道路尽头，再分别检查道路两侧的步行骑行证据、已有遮荫与树冠缺口。南京已有点位可独立查看12个方向，并将方向结论融合为全景总览。</p>
+
+        <div class="planner-source-tabs" role="tablist" aria-label="街景来源">
+          <button class="planner-source active" data-source="existing" role="tab" aria-selected="true">选择已有案例</button>
+          <button class="planner-source" data-source="upload" role="tab" aria-selected="false">上传街景图像</button>
+        </div>
+
+        <label for="planner-map-hour">点位分级时刻
+          <select id="planner-map-hour">
+            <option value="10">10:00</option><option value="12">12:00</option>
+            <option value="14" selected>14:00</option><option value="16">16:00</option>
+          </select>
+        </label>
+        <p class="field-help">地图以SVF绝对阈值为主分级，小时遮荫预测作为辅助信息；落叶/早春点位单列复核。</p>
+
+        <div class="planner-confidence-control">
+          <div class="confidence-label"><label for="planner-confidence">方案置信度</label><output id="planner-confidence-value" for="planner-confidence">65</output></div>
+          <input id="planner-confidence" type="range" min="0" max="100" step="5" value="65" aria-describedby="planner-confidence-help">
+          <div class="confidence-scale"><span>探索性候选更多</span><span>仅保留高置信区域</span></div>
+          <p class="field-help" id="planner-confidence-help">置信度越高，建议区域越少且更保守；低于50时仅输出规划叠加，不进入正式图像生成。</p>
+        </div>
+
+        <div id="planner-existing-source" class="planner-source-panel">
+          <label for="planner-case-select">已有街景点位
+            <select id="planner-case-select"><option value="">请选择点位</option></select>
+          </label>
+          <p class="field-help">已有案例包含语义分割、人行道证据、三维树冠方案和热舒适收益估计。</p>
+          <button class="primary planner-action" id="load-planner-case">查看案例</button>
+        </div>
+
+        <div id="planner-upload-source" class="planner-source-panel" hidden>
+          <label for="planner-upload">上传单一方位街景图像
+            <input id="planner-upload" type="file" accept="image/png,image/jpeg,image/webp">
+          </label>
+          <div class="field-row compact-fields">
+            <label for="planner-upload-longitude">经度（可选）
+              <input id="planner-upload-longitude" inputmode="decimal" placeholder="如118.78">
+            </label>
+            <label for="planner-upload-latitude">纬度（可选）
+              <input id="planner-upload-latitude" inputmode="decimal" placeholder="如32.04">
+            </label>
+          </div>
+          <p class="field-help">坐标留空时，DINOv2会从南京街景库检索城市形态最相近的点位，并采用2024-08-04晴热天气给出Tmrt/UTCI参考估计。请不要上传360度全景图。</p>
+          <label for="planner-capture-month">拍摄月份
+            <select id="planner-capture-month">
+              <option value="0" selected>未知</option>
+              <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+              <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+              <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+              <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+            </select>
+          </label>
+          <p class="field-help">11月至次年3月触发落叶/早春物候复核，避免把连续落叶树列误判为缺树。</p>
+          <label for="planner-intent">规划需求（可选）
+            <textarea id="planner-intent" rows="4" maxlength="500" placeholder="例如：重点判断道路南侧人行道是否需要连续乔木遮荫"></textarea>
+          </label>
+          <button class="secondary planner-action" id="planner-intent-parse">解析为规划任务</button>
+          <section class="planner-intent-confirmation" id="planner-intent-confirmation" hidden aria-live="polite">
+            <span>请确认Agent理解</span>
+            <strong id="planner-intent-objective">目标：树木优先补足步行空间遮荫</strong>
+            <p id="planner-intent-constraints">约束：避开道路尽头与建筑主体，仅编辑候选树冠区域。</p>
+          </section>
+          <button class="primary planner-action" id="analyze-planner-upload">确认需求并运行Agent</button>
+          <p class="field-help">图片只在本机内存与临时文件中处理，分析完成后立即删除；不发送到外部服务。</p>
+        </div>
+
+        <details class="parameter-guide">
+          <summary>Agent如何工作</summary>
+          <ol>
+            <li>观察：语义、深度、SVF与物候证据；</li>
+            <li>规划：将自然语言转成目标、约束和验收指标；</li>
+            <li>空间判断：输出步行骑行、混合道路或机动车专用的可能性；</li>
+            <li>工具调用：选择规划叠加、2.5D定位或图像生成；</li>
+            <li>自动检查：不合格时重规划，最终安全回退到可信建议图。</li>
+          </ol>
+        </details>
+      </aside>
+
+      <section class="planner-results">
+        <div class="planner-map-card">
+          <div class="section-heading">
+            <div><p class="eyebrow">CITYWIDE SHADE PLANNING</p><h2 id="planner-map-title">8,975点 · 14:00</h2></div>
+            <div class="planner-heading-actions">
+              <div class="planner-segmented" role="group" aria-label="规划师点位地图图层">
+                <button class="active" id="planner-map-layer-plan" aria-pressed="true">优化方案</button>
+                <button id="planner-map-layer-shade" aria-pressed="false">遮荫水平</button>
+              </div>
+              <label class="layer-toggle" title="显示或隐藏当前视野建筑">
+                <input id="planner-show-buildings" type="checkbox" checked>建筑
+              </label>
+              <a class="small-button" href="/api/planner/performance-report" download>下载全点位性能报告</a>
+              <a class="small-button" href="/api/planner/final-decisions" download>下载最终规划决策</a>
+              <a class="small-button" href="/api/planner/citywide/pdf" download>下载全市结果图</a>
+              <button class="small-button" id="planner-map-reset">重置地图</button>
+            </div>
+          </div>
+          <div class="planner-map-wrap">
+            <canvas id="planner-point-map" tabindex="0" aria-label="全市街景遮荫优化方案类别地图；可用方向键平移，加减键缩放"></canvas>
+            <div class="planner-map-nav" aria-label="规划师地图导航">
+              <button id="planner-map-zoom-in" aria-label="放大规划师地图" title="放大">＋</button>
+              <button id="planner-map-zoom-out" aria-label="缩小规划师地图" title="缩小">−</button>
+            </div>
+            <div class="planner-map-level" id="planner-map-level">100%</div>
+            <div class="planner-map-scale" id="planner-map-scale"><i></i><span>5 km</span></div>
+            <div class="planner-map-hint">滚轮缩放 · 按住拖动 · 点击点位</div>
+            <div class="map-message" id="planner-map-message">正在加载点位分级…</div>
+          </div>
+          <div class="planner-map-legend" id="planner-map-legend">
+            <span><i class="grade-good"></i>遮荫较好</span>
+            <span><i class="grade-fair"></i>遮荫一般</span>
+            <span><i class="grade-poor"></i>遮荫较差</span>
+            <span><i class="grade-critical"></i>遮荫不足</span>
+            <span><i class="grade-seasonal"></i>落叶/树种复核</span>
+            <span><i class="grade-formal"></i>已正式审核</span>
+          </div>
+          <section class="planner-improvement" id="planner-improvement" hidden aria-live="polite">
+            <div class="planner-improvement-heading">
+              <div><p class="eyebrow">EXPECTED CHANGE</p><h3 id="planner-improvement-title">点位优化前后对比</h3></div>
+              <span id="planner-change-ratio">建议影响区 —</span>
+            </div>
+            <div class="planner-bar-chart" id="planner-bar-chart"></div>
+            <p class="planner-chart-note" id="planner-chart-note"></p>
+          </section>
+          <div class="planner-layer-status" id="planner-layer-status">建筑概览将在进入规划师地图后加载；缩放后自动提高清晰度。</div>
+        </div>
+        <div class="planner-hero-card">
+          <div class="section-heading">
+            <div><p class="eyebrow">STREETSCAPE EVIDENCE</p><h2 id="planner-result-title">等待选择案例或上传图像</h2></div>
+            <span class="evidence-badge" id="planner-evidence-badge">尚未分析</span>
+          </div>
+          <ol class="planner-quick-flow" aria-label="街景规划操作步骤">
+            <li><b>1</b><span>选择点位与方位</span></li>
+            <li><b>2</b><span>检查或微调绿色区域</span></li>
+            <li><b>3</b><span>生成并自动验收树木情景</span></li>
+          </ol>
+          <section class="planner-task-progress" id="planner-task-progress" hidden aria-live="polite" aria-atomic="true">
+            <div class="planner-task-progress-heading">
+              <div><b id="planner-task-progress-title">正在处理</b><span id="planner-task-progress-detail">正在准备本地GPU任务…</span></div>
+              <output id="planner-task-progress-value">0%</output>
+            </div>
+            <progress id="planner-task-progress-bar" max="100" value="0" aria-label="街景处理进度"></progress>
+            <ol class="planner-agent-steps" id="planner-agent-steps"></ol>
+          </section>
+          <div class="planner-scenario-comparison" aria-label="规划指导与现实树木情景对比">
+            <section class="planner-scenario-panel guidance-panel">
+              <header><div><b>规划指导图</b><span>可审计位置与范围</span></div><i>GUIDANCE</i></header>
+              <div class="planner-image-stage">
+                <img id="planner-main-image" alt="街景规划指导图，显示目标高度、优化方位和候选覆盖区" hidden>
+                <div id="planner-image-empty">选择已有案例，或上传一张街景图像开始分析。</div>
+              </div>
+            </section>
+            <section class="planner-scenario-panel realistic-panel">
+              <header><div><b>现实树木情景</b><span>扩散模型自动验收结果</span></div><i>SCENARIO</i></header>
+              <div class="planner-image-stage">
+                <img id="planner-realistic-image" alt="树木优先的现实街景优化情景" hidden>
+                <div id="planner-realistic-empty">完成指导定位后，可生成树木优先的现实情景进行左右对比。</div>
+              </div>
+            </section>
+          </div>
+          <section class="planner-model-alternatives" id="planner-model-alternatives" hidden aria-label="多模型情景候选">
+            <div><b>多模型候选</b><span>点击切换；教师参考与本地结果明确区分</span></div>
+            <div id="planner-model-alternative-buttons"></div>
+          </section>
+          <div class="planner-direction-panel" id="planner-direction-panel" hidden>
+            <div class="planner-view-tabs" role="tablist" aria-label="方位图与融合全景视图">
+              <button class="planner-view-tab active" id="planner-direction-view" role="tab" aria-selected="true">逐方位判断</button>
+              <button class="planner-view-tab" id="planner-fusion-view" role="tab" aria-selected="false">融合全景总览</button>
+            </div>
+            <div class="planner-direction-strip" id="planner-direction-strip" aria-label="12方向街景选择"></div>
+            <p class="planner-direction-note" id="planner-direction-note">选择方位后运行独立GPU判断。</p>
+          </div>
+          <section class="planner-mask-editor" id="planner-mask-editor" hidden aria-label="树冠生成区域编辑器">
+            <div class="planner-editor-heading">
+              <div><p class="eyebrow">HUMAN-IN-THE-LOOP</p><h3>微调树冠生成边界</h3></div>
+              <span id="planner-editor-status">使用自动区域</span>
+            </div>
+            <p class="planner-editor-help">绿色半透明区域会成为现实树木生成的硬约束。添加或擦除边界后，道路尽头保护区仍由后台强制排除。</p>
+            <div class="planner-editor-stage">
+              <canvas id="planner-mask-canvas" aria-label="可编辑的树冠生成区域"></canvas>
+              <i class="planner-brush-cursor" id="planner-brush-cursor" hidden aria-hidden="true"></i>
+            </div>
+            <div class="planner-editor-toolbar" role="toolbar" aria-label="区域编辑工具">
+              <button type="button" class="editor-tool active" id="planner-brush-add" aria-pressed="true">添加区域</button>
+              <button type="button" class="editor-tool" id="planner-brush-erase" aria-pressed="false">擦除区域</button>
+              <label for="planner-brush-size">画笔大小 <output id="planner-brush-size-value">28</output> px</label>
+              <input id="planner-brush-size" type="range" min="8" max="90" value="28">
+              <button type="button" class="editor-tool" id="planner-mask-undo">撤销</button>
+              <button type="button" class="editor-tool" id="planner-mask-reset">恢复自动区域</button>
+              <button type="button" class="editor-submit" id="planner-mask-submit" disabled>提交本次修改</button>
+            </div>
+          </section>
+          <section class="planner-review-decision" id="planner-review-decision" hidden aria-label="规划师复核结论">
+            <div class="planner-review-heading">
+              <div><b>规划师复核结论</b><small id="planner-review-scope-help">自动建议不合适时，可复核当前方位图。</small></div>
+              <label class="planner-no-intervention-toggle">
+                <input type="checkbox" id="planner-no-intervention">
+                <span id="planner-no-intervention-label">当前方位不需要遮荫优化</span>
+              </label>
+            </div>
+            <div class="planner-no-intervention-details" id="planner-no-intervention-details" hidden>
+              <label for="planner-no-intervention-reason">判断理由</label>
+              <textarea id="planner-no-intervention-reason" rows="2" maxlength="500" placeholder="例如：现有连续高大乔木已完整覆盖主要步行空间，方向天空缺口不构成热暴露风险。"></textarea>
+              <button type="button" class="secondary" id="planner-no-intervention-submit">提交“无需优化”结论</button>
+              <div class="planner-no-intervention-status" id="planner-no-intervention-status" role="status"></div>
+            </div>
+          </section>
+          <section class="planner-feedback-panel" id="planner-feedback-panel" hidden aria-label="反馈数据设置">
+            <label class="planner-feedback-consent">
+              <input type="checkbox" id="planner-feedback-consent" checked>
+              <span><b>保存为RLHF/偏好学习候选数据</b><small>默认开启。仅在明确提交“无需优化”结论，或人工区域生成并通过自动验收后本地保存；不会立即在线训练。</small></span>
+            </label>
+            <div class="planner-feedback-status armed" id="planner-feedback-status" role="status">已开启：完成明确提交后，系统会给出可验证的反馈ID。</div>
+            <div class="planner-feedback-proof" id="planner-feedback-proof" hidden></div>
+          </section>
+          <div class="planner-generation-actions">
+            <button class="secondary generate-plan-button" id="generate-point-plan" hidden>生成12方向规划指导全景</button>
+            <button class="secondary generate-plan-button" id="start-mask-edit" hidden>微调生成区域</button>
+            <button class="primary generate-plan-button" id="generate-realistic-tree" hidden>生成当前方位现实树木情景</button>
+          </div>
+          <div class="planner-overlay-legend" id="planner-overlay-legend" hidden></div>
+          <div class="public-space-meter" id="public-space-meter" hidden>
+            <div class="public-space-heading"><span>公共步行骑行可能性</span><strong id="public-space-score">—</strong></div>
+            <div class="public-space-track" role="meter" aria-label="公共步行骑行可能性" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="public-space-indicator"></i></div>
+            <div class="public-space-scale"><span>更可能为机动车专用空间</span><span>更可能服务步行骑行</span></div>
+          </div>
+        </div>
+
+        <div class="planner-metric-grid" id="planner-metrics"></div>
+        <div class="planner-recommendation-card" id="planner-recommendation" hidden></div>
+        <details class="planner-agent-trace" id="planner-agent-trace" hidden>
+          <summary>查看Agent计划、工具调用与自动检查</summary>
+          <div id="planner-agent-trace-content"></div>
+        </details>
+        <details class="planner-note">
+          <summary>结果解释与适用边界</summary>
+          <p>方位图的天空视域率不是完整半球SVF，0.30仅作为良好遮荫基础门槛，并由DINOv2优质案例近邻进行适应性调整。无坐标上传图采用相似南京城市形态与2024-08-04晴热天气作参考迁移，Tmrt/UTCI为情景估计而非上传地点实测。</p>
+        </details>
+      </section>
+    </main>
+  </section>
+  <script src="/static/app.js?build=current"></script>
+</body>
+</html>

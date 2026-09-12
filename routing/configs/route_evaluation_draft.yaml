@@ -1,0 +1,62 @@
+rule_version: phase_g7_route_evaluation_formal_v2
+status: APPROVED
+
+inputs:
+  formal_graph: routing/data/graph/step27_route_graph.npz
+  formal_costs: routing/data/graph/step27_hourly_costs.npz
+  graph_metadata: routing/data/graph/step27_graph_metadata.json
+  validation_routes: routing/outputs/routes/validation/step27_validation_route_edges.csv
+  validation_summaries: routing/outputs/tables/step27_validation_route_summary.csv
+  algorithm_consistency: routing/outputs/tables/step27_algorithm_consistency.csv
+  segment_coverage: routing/data/thermal_edges/thermal_segment_coverage.csv
+  road_classification: routing/data/candidate_network/road_thermal_classification.csv
+
+qc:
+  cost_tolerance: 1.0e-6
+  maximum_snap_distance_m: 100
+  require_no_repeated_segments: true
+  require_continuous_geometry: true
+  require_no_motor_vehicle_only_edges: true
+  require_no_suspicious_grade_jump: true
+
+grade_transition_review:
+  same_bridge_tunnel_layer: allow
+  same_nonempty_name_or_ref: allow_named_transition
+  maximum_unnamed_alignment_angle_deg: 45
+  larger_unnamed_or_different_road_transition: suspicious_grade_jump
+  formal_graph_repair_performed: true
+  approved_forbidden_turn_source: routing/configs/approved_grade_turn_restrictions.csv
+  approved_forbidden_turn_count: 1756
+
+route_metrics:
+  heat_stress_utci_threshold_c: 32
+  report_spatial_fallback_length: true
+  report_prior_imputed_length: true
+  report_center_inside_outside_length: true
+
+formal_map_plan:
+  algorithm: astar
+  objectives: [shortest, shade, utci, risk_aware]
+  include_center_boundary: true
+  include_utci_gradient: true
+  include_shade: true
+  include_uncertainty: true
+  include_fallback_overlay: true
+  formats: [png, pdf, file_geodatabase]
+  formal_maps_generated: true
+  representative_selection:
+    primary: maximum_distinct_objective_edge_sequences
+    secondary: maximum_summed_pairwise_jaccard_distance
+    final_tie_break: lexical_od_id
+  representative_hour: inherited_from_fixed_od_case
+  route_scope: all_25_fixed_od_pairs_x_4_objectives
+  gis_layers:
+    - RouteComparisons
+    - RouteThermalSegments
+    - CenterBoundary
+
+approval:
+  approved: true
+  approved_by: user
+  approved_at: "2026-07-26T14:54:00+08:00"
+  notes: "User explicitly approved the formal Step28 run after turn-aware Step27 and the repaired Step28 check passed."

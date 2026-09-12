@@ -1,0 +1,37 @@
+rule_version: phase_g3_step24d_global_aligned_gap_check_v1
+status: CHECK_ONLY
+
+input:
+  formal_graph: routing/data/graph/step27_route_graph.npz
+  road_classification: routing/data/candidate_network/road_thermal_classification.csv
+  formal_network_gdb: routing/data/topology/step24_repaired_network.gdb
+  motor_only_layer: MotorVehicleOnlyRoads
+  center_boundary: data/raw/Nanjing_center_boundary/Nanjing_center_UTM50N.shp
+
+geometry:
+  minimum_gap_m: 2.0
+  maximum_gap_m: 100.0
+  review_alignment_deg: 15.0
+  formal_alignment_deg: 5.0
+  endpoint_intersection_tolerance_m: 1.0
+  spatial_grid_m: 100.0
+  motor_only_clearance_m: 3.0
+
+network:
+  minimum_detour_ratio: 10.0
+  minimum_detour_saving_m: 1000.0
+  maximum_fclass_rank_difference: 1
+  one_connector_per_component_pair_per_round: true
+  automatic_excluded_fclasses: [steps]
+  maximum_unnamed_automatic_gap_m: 30.0
+
+outputs:
+  directory: routing/data/global_topology_gap_check
+  all_candidates: routing/data/global_topology_gap_check/global_aligned_gap_candidates.csv
+  high_confidence: routing/data/global_topology_gap_check/global_high_confidence_gap_shortlist.csv
+  summary: routing/data/global_topology_gap_check/step24d_global_check_summary.json
+  overview_figure: routing/data/global_topology_gap_check/global_high_confidence_gap_overview.png
+  contact_sheet: routing/data/global_topology_gap_check/global_high_confidence_gap_contact_sheet.png
+  report: routing/reports/STEP24D_GLOBAL_ALIGNED_GAP_CHECK_REPORT.md
+  failed: routing/data/global_topology_gap_check/failed_records.csv
+  log: routing/logs/step24d_global_aligned_gap_check.log

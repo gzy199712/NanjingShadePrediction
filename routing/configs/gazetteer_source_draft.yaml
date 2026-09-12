@@ -1,0 +1,57 @@
+source_version: phase_g8_gazetteer_source_v1
+status: BUILT_AND_INDEPENDENT_QC_PASS
+
+source:
+  provider: Geofabrik GmbH
+  dataset: OpenStreetMap Jiangsu extract
+  format: osm.pbf
+  download_url: https://download.geofabrik.de/asia/china/jiangsu-latest.osm.pbf
+  information_url: https://download.geofabrik.de/asia/china/jiangsu.html
+  approximate_download_size_mb_at_review: 74
+  license: Open Database License 1.0
+  license_url: https://www.openstreetmap.org/copyright
+  required_attribution: "© OpenStreetMap contributors"
+  local_source_path: routing/data/gazetteer/source/jiangsu-latest.osm.pbf
+  source_size_bytes: 78561596
+  source_sha256: fdc7ae60671f6e155acc7051ffd29f1cc9cf971d09bccc223021887a363c8234
+  osm_data_timestamp_utc: 2026-07-25T20:21:51Z
+  retrieval_method: manual_user_download_after_terminal_network_block
+
+freeze_policy:
+  preserve_downloaded_source: true
+  record_retrieved_at: true
+  record_sha256: true
+  never_modify_source_file: true
+
+build_scope:
+  target: Nanjing local offline gazetteer
+  clip_crs: EPSG:32650
+  boundary: Nanjing center-city boundary
+  include_named_roads: true
+  include_named_places_and_pois: true
+  include_named_public_transport: true
+  name_fields:
+    - name
+    - name:zh
+    - name:en
+    - alt_name
+    - short_name
+    - official_name
+  provenance_fields:
+    - osm_type
+    - osm_id
+    - source_tags
+    - source_retrieved_at
+    - source_sha256
+
+runtime:
+  external_geocoding_requests: false
+  ambiguous_matches: return_ranked_candidates_and_require_selection
+  exact_user_locations_persisted: false
+
+approval:
+  rules_approved_by_user: true
+  download_approved: true
+  formal_build_approved: true
+  formal_build_completed: true
+  independent_qc_passed: true

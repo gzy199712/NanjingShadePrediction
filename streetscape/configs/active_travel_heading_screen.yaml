@@ -1,0 +1,35 @@
+phase:
+  name: Four-view active-travel heading screen
+  step: stage_41c
+
+inputs:
+  benchmark: streetscape/data/agent/stage_40_active_travel_rescue/active_travel_rescue_manifest.csv
+  response_schema: streetscape/schemas/active_travel_heading_screen.schema.json
+
+outputs:
+  directory: streetscape/data/agent/stage_41c_active_travel_heading_screen
+  report: streetscape/reports/STAGE_41C_ACTIVE_TRAVEL_HEADING_SCREEN.md
+
+model:
+  model_id: Qwen/Qwen3-VL-2B-Instruct
+  precision: bf16
+
+runtime:
+  device: cuda
+  attention: sdpa
+  max_new_tokens: 420
+  maximum_peak_vram_gib: 7.8
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+
+benchmark:
+  headings: [0, 90, 180, 270]
+  pilot_per_group: 1
+  full_points: 120
+
+gates:
+  pilot_success_rate: 1.0
+  normalized_schema_rate: 1.0
+  positive_control_has_candidate: true
+  maximum_mean_candidate_headings: 3.5
+

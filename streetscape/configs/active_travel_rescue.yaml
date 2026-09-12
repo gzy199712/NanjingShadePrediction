@@ -1,0 +1,36 @@
+phase:
+  name: Active-travel recognition rescue
+  step: stage_40
+
+runtime:
+  device: cuda
+  require_full_gpu: true
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  dtype: bfloat16
+  attention: sdpa
+  seed: 20260817
+  max_new_tokens: 640
+  maximum_peak_vram_gib: 7.8
+
+inputs:
+  decisions: streetscape/data/planning/stage_32_citywide_final_decisions/citywide_final_planning_decisions.csv.gz
+  image_metadata: artifacts/intermediate/pipeline_records/steps/step0_check/image_metadata.csv
+  raw_direction_directory: data/raw/NanjingStreetViewImages_12Directions_pitch0
+  response_schema: streetscape/schemas/active_travel_rescue_response.schema.json
+
+outputs:
+  directory: streetscape/data/agent/stage_40_active_travel_rescue
+  report: streetscape/reports/STAGE_40_ACTIVE_TRAVEL_RESCUE.md
+
+model:
+  model_id: Qwen/Qwen3-VL-2B-Instruct
+  precision: bf16
+
+benchmark:
+  headings: [0, 90, 180, 270]
+  rescue_candidates: 60
+  motor_only_controls: 30
+  positive_walkable_controls: 30
+  pilot_per_group: 1
+

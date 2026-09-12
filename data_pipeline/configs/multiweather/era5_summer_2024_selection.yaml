@@ -1,0 +1,53 @@
+project_root: .
+phase: multiweather_cross_date_validation
+source_dataset: reanalysis-era5-single-levels
+source_doi: 10.24381/cds.adbb2d47
+target_timezone: Asia/Shanghai
+target_period:
+  start_local_date: 2024-07-01
+  end_local_date: 2024-08-31
+  utc_padding_start_date: 2024-06-30
+# A single ERA5 grid point is deliberately used for all Nanjing tiles so that
+# spatial differences in the labels come from the urban surface, not from
+# different reanalysis cells.
+area_north_west_south_east: [32.0, 118.75, 32.0, 118.75]
+representative_location:
+  name: Nanjing_center
+  latitude: 32.0603
+  longitude: 118.7969
+instant_variables:
+  - 2m_temperature
+  - 2m_dewpoint_temperature
+  - 10m_u_component_of_wind
+  - 10m_v_component_of_wind
+  - surface_pressure
+  - total_cloud_cover
+accum_variables:
+  - total_precipitation
+  - surface_solar_radiation_downwards
+  - surface_thermal_radiation_downwards
+  - total_sky_direct_solar_radiation_at_surface
+selection:
+  evaluation_hours_local: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+  absolute_hot_day_max_temperature_c: 30.0
+  minimum_maximum_global_shortwave_w_m2: 600.0
+  minimum_mean_global_shortwave_w_m2: 400.0
+  maximum_daily_precipitation_mm: 1.0
+  maximum_mean_cloud_fraction: 0.50
+  weekly_minimum_dates: 1
+  weekly_maximum_dates: 2
+  minimum_separation_days: 2
+  second_date_minimum_score_gain: 0.75
+  weather_thresholds:
+    clear_mean_cloud_fraction: 0.40
+    cloudy_mean_cloud_fraction: 0.62
+    humid_mean_relative_humidity_percent: 68.0
+    windy_mean_wind_speed_m_s: 3.5
+    rainy_daily_precipitation_mm: 1.0
+raw_directory: data/raw/ERA5_Nanjing_202407_202408
+curated_directory: data/training_data/multiweather/step112_era5_weather_selection
+process_directory: artifacts/intermediate/pipeline_records/steps/step112_era5_weather_selection
+reference_meteorology_csv: data/raw/SOLWEIG20240729/Meteorology/Rawdata20240729.csv
+instant_download_target: data_stream-oper_stepType-instant.nc
+accum_download_target: data_stream-oper_stepType-accum.nc
+overwrite_download: false

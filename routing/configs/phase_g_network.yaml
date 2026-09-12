@@ -1,0 +1,34 @@
+project_root: .
+
+inputs:
+  osm_road_shp: data/raw/osm_geofabrik/2026-08-01/nanjing_center_bbox_roads_20260801.shp
+  center_boundary_shp: data/raw/Nanjing_center_boundary/Nanjing_center_UTM50N.shp
+  thermal_points_shp: data/training_data/spatial/main_points_8975.shp
+  routing_point_costs_csv: training/predictions/full_sample/routing_point_costs_20240729.csv
+
+spatial:
+  target_crs: EPSG:32650
+  routing_scope: center_boundary_bbox
+  center_buffer_candidates_m: [0, 500, 1000]
+  topology_tolerance_candidates_m: [1, 2, 3]
+  thermal_match_distance_candidates_m: [15, 25, 50, 75]
+  endpoint_search_radius_m: 25
+  long_segment_threshold_m: 10000
+  short_segment_thresholds_m: [0.5, 1, 2, 5]
+  small_component_edge_threshold: 10
+  geometry_grid_size_m: 250
+
+outputs:
+  output_root: routing/data/audit
+  audit_gdb: routing/data/audit/road_audit.gdb
+  reports_dir: routing/reports
+  log_dir: routing/logs
+  projected_road_layer: RoadProjectedAudit
+
+runtime:
+  overwrite: false
+  resume: false
+  gdal_pam_proxy_dir: C:/Users/YLS/AppData/Local/ESRI/rasterproxies
+  expected_thermal_points: 8975
+  expected_hours: 13
+  maximum_invalid_geometry_ratio: 0.05

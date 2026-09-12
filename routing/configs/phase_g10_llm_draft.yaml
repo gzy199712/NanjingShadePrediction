@@ -1,0 +1,72 @@
+phase: G10
+step: 31
+status: APPROVED_FORMAL_RUN
+purpose: natural_language_adapter_for_frozen_step30_api
+
+allowed_responsibilities:
+  - parse_natural_language_into_structured_parameters
+  - identify_missing_parameters
+  - request_place_candidate_disambiguation
+  - request_user_confirmation_before_route_call
+  - call_only_frozen_step30_api
+  - explain_structured_route_tradeoffs
+
+forbidden_responsibilities:
+  - compute_or_modify_routes
+  - read_or_modify_route_graph_or_hourly_costs
+  - modify_shade_tmrt_utci_or_uncertainty
+  - bypass_json_schema
+  - bypass_turn_restrictions
+  - relax_snap_or_detour_constraints
+  - silently_choose_ambiguous_place
+  - rewrite_no_path_as_success
+
+proposed_flow:
+  - natural_language
+  - structured_parameter_draft
+  - json_schema_validation
+  - deterministic_local_geocoding
+  - explicit_candidate_selection
+  - explicit_user_confirmation
+  - deterministic_step30_api_call
+  - structured_result_validation
+  - bounded_natural_language_explanation
+
+privacy:
+  default_runtime: local_only
+  cloud_model_allowed: false
+  exact_coordinates_external: false
+  place_queries_external: false
+  conversation_persistence: false
+  request_body_logging: false
+  bind_host: 127.0.0.1
+
+model_selection:
+  selected: true
+  preferred_class: local_chinese_capable_quantized_7b_or_smaller
+  recommended_runtime: Ollama_for_Windows
+  recommended_primary_model: qwen3:8b-q4_K_M
+  recommended_primary_download_size_gb: 5.2
+  recommended_fallback_model: qwen3:4b-q4_K_M
+  recommended_fallback_download_size_gb: 2.6
+  proposed_context_limit: 2048
+  proposed_thinking_mode: false
+  gpu_detected: NVIDIA GeForce RTX 4060 Ti
+  gpu_memory_mib: 8188
+  runtime_selected: true
+  runtime: Ollama_for_Windows
+  runtime_version: 0.32.4
+  model: qwen3:8b-q4_K_M
+  model_id: 500a1f067a9f
+  model_size_gb: 5.2
+  thinking_mode: false
+  gpu_required: true
+  download_approved: true
+
+approval:
+  preflight_only: false
+  formal_run_approved: true
+  approved_by_user: true
+  approved_date: 2026-07-27
+  conversation_retention: memory_only_no_persistence
+  decisions_required: []

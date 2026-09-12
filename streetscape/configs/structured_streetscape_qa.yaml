@@ -1,0 +1,50 @@
+phase:
+  name: Structured streetscape QA reliability benchmark
+  step: stage_39
+
+runtime:
+  device: cuda
+  require_full_gpu: true
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  dtype: bfloat16
+  attention: sdpa
+  seed: 20260817
+  max_new_tokens: 1024
+  maximum_peak_vram_gib: 7.8
+
+inputs:
+  benchmark: streetscape/data/agent/stage_37_foundation/planner_agent_benchmark_manifest.csv
+  response_schema: streetscape/schemas/planner_agent_response.schema.json
+
+outputs:
+  directory: streetscape/data/agent/stage_39_structured_qa
+  report: streetscape/reports/STAGE_39_STRUCTURED_STREETSCAPE_QA.md
+
+model:
+  model_id: Qwen/Qwen3-VL-2B-Instruct
+  precision: bf16
+  source: https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct
+
+image:
+  max_width: 1536
+  max_height: 512
+
+evaluation:
+  expected_actions:
+    TREE_PRIORITY_CANDIDATE: [tree_first, planner_review]
+    ACTIONABLE_VISUAL_ADVICE: [tree_first, shade_facility_supplement, maintain, planner_review]
+    NO_INTERVENTION_LOW_SVF: [maintain]
+    EXISTING_TREE_ROW_COVERAGE_REVIEW: [maintain, planner_review]
+    EXISTING_TREE_PHENOLOGY_REVIEW: [maintain, planner_review]
+    EXISTING_YOUNG_OR_SPARSE_TREE_GROWTH_REVIEW: [maintain, planner_review]
+    AUTO_PLANNING_ABSTAIN_INSUFFICIENT_VISIBLE_WALKABLE: [abstain, planner_review]
+    MOTOR_VEHICLE_ONLY_EXCLUDED: [abstain]
+    NO_NEW_TREE_EXISTING_SHADE_OR_CANOPY: [maintain]
+    AUTO_PLANNING_ABSTAIN_PHENOLOGY_UNCERTAIN: [abstain, planner_review]
+    NO_INTERVENTION_COVERED_INFRASTRUCTURE: [maintain, abstain]
+  pass_gates:
+    normalized_schema_rate: 1.0
+    full_gpu_rate: 1.0
+    maximum_failure_rate: 0.10
+    minimum_action_consistency_rate: 0.75

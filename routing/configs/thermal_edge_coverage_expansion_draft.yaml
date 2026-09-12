@@ -1,0 +1,67 @@
+rule_version: phase_g5_unknown_reduction_draft_v1
+status: APPROVED
+
+scope:
+  polygon: Nanjing_center_UTM50N
+  road_filter: thermal_comfort_relevant
+  spatial_relation: intersects
+
+thermal_segmentation:
+  enabled: true
+  target_segment_length_m: 50
+  preserve_original_edge_id: true
+  create_segment_id: true
+  preserve_graph_connectivity: true
+
+spatial_interpolation:
+  method: inverse_distance_weighted_point_predictions
+  nearest_point_count: 4
+  minimum_distance_m: 1
+  levels:
+    - coverage_type: spatial_interpolated
+      maximum_distance_m: 150
+      confidence: medium
+      routing_policy: normal
+    - coverage_type: spatial_interpolated_low
+      minimum_distance_exclusive_m: 150
+      maximum_distance_m: 300
+      confidence: low
+      routing_policy: allowed_with_uncertainty_penalty
+    - coverage_type: spatial_fallback
+      minimum_distance_exclusive_m: 300
+      maximum_distance_m: 500
+      confidence: very_low
+      routing_policy: fallback_only
+
+grade_separation:
+  surface_definition:
+    bridge: false
+    tunnel: false
+    layer: 0
+  permit_surface_point_interpolation: false
+  preferred_method: same_structure_and_layer_support
+  no_compatible_support_policy: class_hour_prior_with_high_uncertainty
+
+remaining_unknown:
+  zero_fill: false
+  disconnect_graph: false
+  cost_method: class_hour_prior_with_high_uncertainty
+  coverage_type: prior_imputed
+  routing_policy: fallback_only
+  require_unknown_distance_reporting: true
+
+uncertainty:
+  preserve_prediction_std: true
+  include_between_point_variance: true
+  include_distance_penalty: true
+  spatial_interpolated_max_multiplier: 1.25
+  spatial_interpolated_low_max_multiplier: 1.50
+  spatial_fallback_max_multiplier: 2.00
+  prior_imputed_multiplier: 1.50
+  include_imputation_flag: true
+
+approval:
+  approved: true
+  approved_by: user
+  approved_at: "2026-07-26T13:40:45+08:00"
+  notes: "User explicitly approved the reviewed unknown-reduction rules and requested a formal Step26 rerun."

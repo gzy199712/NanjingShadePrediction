@@ -1,0 +1,53 @@
+step: stage_29
+status: streaming_cuda_localization_pilot
+inputs:
+  manifest: streetscape/data/planning/stage_26_full_city_cascade/high_resolution_gpu_manifest.csv
+  raw_direction_directory: data/raw/NanjingStreetViewImages_12Directions_pitch0
+models:
+  semantic:
+    id: facebook/mask2former-swin-large-mapillary-vistas-semantic
+    local_path: models/facebook_mask2former-swin-large-mapillary-vistas-semantic
+  depth:
+    id: depth-anything/Depth-Anything-V2-Metric-Outdoor-Small-hf
+    local_path: .local/models/depth-anything-v2-metric-outdoor-small-hf
+  objects:
+    id: IDEA-Research/grounding-dino-tiny
+    local_path: models/artificial_shade/grounding-dino-tiny-a2bb814d
+camera:
+  fov_degrees: 90.0
+  pitch_degrees: 0.0
+  image_size: 512
+processing:
+  pilot_point_count: 2
+  semantic_probability_size: 128
+  geometry_size: 128
+  depth_smoothing_kernel: 5
+  depth_discontinuity_log_threshold: 0.12
+  ground_normal_abs_y_minimum: 0.45
+  walkable_score_threshold: 0.30
+  semantic_confidence_threshold: 0.50
+  commit_every_views: 1
+  save_preview_every_points: 1
+semantic_groups:
+  walkable: [Sidewalk, Pedestrian Area, Curb Cut, Bike Lane, Crosswalk - Plain]
+  vegetation: [Vegetation]
+  sky: [Sky]
+  obstacle: [Fence, Guard Rail, Barrier, Wall, Person, Bicyclist, Motorcyclist, Other Rider, Street Light, Pole, Utility Pole, Traffic Light, Traffic Sign (Back), Traffic Sign (Front), Bicycle, Bus, Car, Motorcycle, Other Vehicle, Truck]
+objects:
+  input_size: 800
+  initial_box_threshold: 0.20
+  nms_iou_threshold: 0.50
+  maximum_detections_per_view: 30
+  minimum_normalized_box_size: 0.002
+  taxonomy:
+    - {class_name: street_tree, phrase: street tree}
+    - {class_name: tree_trunk, phrase: tree trunk}
+gpu_policy:
+  device: cuda:0
+  dtype: float16
+  cpu_offload: false
+  cpu_fallback: false
+outputs:
+  directory: streetscape/data/planning/stage_29_streaming_gpu_localization_pilot
+  log: streetscape/logs/stage_29_streaming_gpu_localization.log
+  report: streetscape/reports/STAGE_29_STREAMING_GPU_LOCALIZATION.md

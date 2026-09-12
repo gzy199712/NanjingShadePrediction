@@ -1,0 +1,56 @@
+phase:
+  name: Tool-constrained multimodal planner agent
+  step: stage_43
+
+inputs:
+  benchmark: streetscape/data/agent/stage_37_foundation/planner_agent_benchmark_manifest.csv
+  decisions: streetscape/data/planning/stage_32_citywide_final_decisions/citywide_final_planning_decisions.csv.gz
+  case_index: streetscape/data/agent/stage_42c_multimodal_rag_index/case_index.csv.gz
+  case_embeddings: streetscape/data/agent/stage_42c_multimodal_rag_index/case_embeddings.npy
+  proposal_schema: streetscape/schemas/planner_agent_response.schema.json
+  trace_schema: streetscape/schemas/planner_agent_trace.schema.json
+
+outputs:
+  directory: streetscape/data/agent/stage_43_tool_constrained_agent
+  report: streetscape/reports/STAGE_43_TOOL_CONSTRAINED_AGENT.md
+
+models:
+  embedder: Qwen/Qwen3-VL-Embedding-2B
+  reasoner: Qwen/Qwen3-VL-2B-Instruct
+  embedding_dimension: 1024
+  retrieval_instruction: Retrieve Nanjing street-view cases with similar active-travel visibility, road-access constraints, and evidence reliability.
+
+runtime:
+  device: cuda
+  dtype: bfloat16
+  attention: sdpa
+  seed: 20260817
+  max_new_tokens: 768
+  maximum_peak_vram_gib: 7.8
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+
+pilot:
+  roles:
+    TREE_PRIORITY_CANDIDATE: 4
+    MOTOR_VEHICLE_ONLY_EXCLUDED: 1
+    AUTO_PLANNING_ABSTAIN_INSUFFICIENT_VISIBLE_WALKABLE: 1
+    NO_INTERVENTION_LOW_SVF: 1
+    AUTO_PLANNING_ABSTAIN_PHENOLOGY_UNCERTAIN: 1
+    EXISTING_TREE_ROW_COVERAGE_REVIEW: 1
+    EXISTING_YOUNG_OR_SPARSE_TREE_GROWTH_REVIEW: 1
+    NO_INTERVENTION_COVERED_INFRASTRUCTURE: 1
+  retrieved_per_class: 1
+
+policy:
+  low_svf_no_intervention_maximum: 0.20
+  minimum_walkable_direction_count: 1
+  winter_months: [11, 12, 1, 2]
+  existing_tree_direction_minimum: 3
+
+quality_gates:
+  normalized_schema_rate: 1.0
+  trace_schema_rate: 1.0
+  hard_gate_safety_rate: 1.0
+  tool_trace_rate: 1.0
+  maximum_failure_rate: 0.0

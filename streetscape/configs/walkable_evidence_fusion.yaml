@@ -1,0 +1,27 @@
+phase:
+  name: Walkable-space evidence fusion
+  step: stage_41
+
+inputs:
+  rescue_manifest: streetscape/data/agent/stage_40_active_travel_rescue/active_travel_rescue_manifest.csv
+  rescue_pilot_directory: streetscape/data/agent/stage_40_active_travel_rescue/pilot
+  decisions: streetscape/data/planning/stage_32_citywide_final_decisions/citywide_final_planning_decisions.csv.gz
+  view_metrics: streetscape/data/planning/stage_31_integrated_streaming_formal/view_metrics.csv.gz
+
+outputs:
+  directory: streetscape/data/agent/stage_41_walkable_evidence_fusion
+  report: streetscape/reports/STAGE_41_WALKABLE_EVIDENCE_FUSION.md
+
+rules:
+  vlm_keywords: [sidewalk, cycle lane, cycling lane, shared path, pedestrian area, crossing, walkway]
+  heading_neighborhood_degrees: 30.01
+  relaxed_lower_half_probability_minimum: 0.002
+  relaxed_retained_ratio_minimum: 0.0005
+  ground_score_minimum: 0.60
+  obstacle_probability_maximum: 0.20
+  minimum_adjacent_supported_views: 2
+  require_thermal_relevant_road: true
+  motor_vehicle_exclusion_is_hard_gate: true
+  promotion_target: PIXEL_LOCALIZATION_REQUIRED
+  generation_unlock_allowed: false
+

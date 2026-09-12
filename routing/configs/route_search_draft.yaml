@@ -1,0 +1,107 @@
+rule_version: phase_g6_route_search_turn_repair_v2
+status: APPROVED
+
+interface:
+  modes: [walk, bike, shared]
+  objectives: [shortest, shade, utci, risk_aware]
+  algorithms: [astar, dijkstra]
+  hours: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+
+mode_networks:
+  source_rule: approved_two_class_override
+  walk: thermal_comfort_relevant
+  bike: thermal_comfort_relevant
+  shared: thermal_comfort_relevant
+  note: "The user-approved two-class road rule does not provide reliable fields for further walk/bike separation, so all active modes use the same thermal-comfort-relevant topology."
+
+objective_weights:
+  shortest:
+    formula: length_m
+  shade:
+    alpha: 1.0
+    beta: 1.0
+    formula: "length_m * (alpha + beta * (1 - shade_mean))"
+  utci:
+    alpha: 1.0
+    beta: 1.0
+    formula: "length_m * (alpha + beta * utci_normalized_hour)"
+  risk_aware:
+    alpha: 1.0
+    beta: 1.0
+    gamma_default: 1.0
+    formula: "length_m * (alpha + beta * utci_normalized_hour + gamma * uncertainty_normalized_hour)"
+
+normalization:
+  utci: per_hour_minmax_over_formal_segments
+  uncertainty: per_hour_minmax_over_formal_segments
+  clamp_to_unit_interval: true
+  preserve_raw_values: true
+
+coverage_policy:
+  shortest:
+    direct: allow
+    network_interpolated: allow
+    spatial_interpolated: allow
+    spatial_interpolated_low: allow
+    structure_interpolated: allow
+    spatial_fallback: allow_and_report
+    prior_imputed: allow_and_report
+  thermal_objectives:
+    first_pass_exclude_routing_policy: [fallback_only]
+    disconnected_retry: high_penalty
+    penalties:
+      spatial_fallback: 1.5
+      prior_imputed: 3.0
+      default_fallback_only: 1.5
+    always_report_length_for:
+      - spatial_fallback
+      - prior_imputed
+
+origin_destination_snap:
+  maximum_distance_m: 100
+  candidate_count: 5
+  require_same_component: true
+  cross_component_policy: return_no_path_with_reason
+
+maximum_detour:
+  default: null
+  report_always: true
+  enforcement_method: constrained_candidate_search
+  never_silently_return_over_limit: true
+
+heuristic:
+  shortest: euclidean_distance
+  weighted: "euclidean_distance * minimum_admissible_unit_cost"
+  fallback_when_admissibility_not_proven: zero
+
+turn_restrictions:
+  enabled: true
+  source_csv: routing/configs/approved_grade_turn_restrictions.csv
+  expected_count: 1756
+  matching_key: [node_id, unordered_segment_pair]
+  search_state: [current_node, incoming_edge]
+  preserve_same_structure: true
+  preserve_same_nonempty_name_or_ref: true
+  preserve_aligned_approach_maximum_angle_deg: 45
+  action_for_approved_candidates: prohibit_turn_only
+  delete_road_segments: false
+  modify_step26_costs: false
+
+algorithm_validation:
+  default_before_qc: dijkstra
+  astar_cost_tolerance: 1.0e-6
+  fixed_od_sample_count: 100
+  random_seed: 42
+  minimum_od_separation_m: 1000
+  require_astar_dijkstra_consistency_before_astar_default: true
+
+duration:
+  walk_speed_mps: 1.4
+  bike_speed_mps: 4.2
+  shared_speed_mps: 1.4
+
+approval:
+  approved: true
+  approved_by: user
+  approved_at: "2026-07-26T14:38:00+08:00"
+  notes: "The user approved the 2026-08-01 latest OSM rectangular-scope network. The same deterministic grade-transition rule was rebuilt for the new segment IDs, producing 1,756 node-specific restrictions."

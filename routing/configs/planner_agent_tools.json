@@ -1,0 +1,31 @@
+{
+  "agent_name": "planner_multimodal_tool_agent",
+  "max_replans": 2,
+  "gpu_policy": {
+    "sequential_loading": true,
+    "cpu_offload": false,
+    "cpu_fallback": false,
+    "vram_budget_gib": 7.8
+  },
+  "city_profiles": {
+    "nanjing": {
+      "display_name": "南京",
+      "climate_context": "夏热冬冷；夏季高温高辐射情景优先评价连续遮荫",
+      "street_tree_policy": "连续高大乔木优先，幼树优先评估生长与养护，人工遮阳仅作补充",
+      "leaf_off_months": [11, 12, 1, 2],
+      "north_aligned_panorama": true,
+      "panorama_width": 2048,
+      "panorama_height": 512
+    }
+  },
+  "tools": [
+    {"name": "mask2former_semantic_overlay", "role": "observe", "device": "cuda", "required": true},
+    {"name": "qwen3_vl_scene_consensus", "role": "reason", "device": "cuda", "required": true},
+    {"name": "multimodal_rag_case_retrieval", "role": "reason", "device": "cuda", "required": true},
+    {"name": "spherical_perspective_windows", "role": "localize", "device": "cuda", "required": true},
+    {"name": "semantic_depth_25d_layout", "role": "localize", "device": "cuda", "required": true},
+    {"name": "powerpaint_tree_editor", "role": "generate", "device": "cuda", "required": false},
+    {"name": "translucent_planning_overlay", "role": "generate", "device": "cuda", "required": true},
+    {"name": "semantic_geometry_acceptance", "role": "verify", "device": "cuda", "required": true}
+  ]
+}

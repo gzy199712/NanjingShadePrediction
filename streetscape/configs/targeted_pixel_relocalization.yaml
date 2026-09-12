@@ -1,0 +1,33 @@
+phase:
+  name: Targeted CUDA pixel relocalization
+  step: stage_41b
+
+inputs:
+  fusion_decisions: streetscape/data/agent/stage_41_walkable_evidence_fusion/pilot_fusion_decisions.csv
+  rescue_manifest: streetscape/data/agent/stage_40_active_travel_rescue/active_travel_rescue_manifest.csv
+  base_localization_config: streetscape/configs/stage_29_streaming_gpu_localization.yaml
+
+outputs:
+  directory: streetscape/data/agent/stage_41b_targeted_pixel_relocalization
+  report: streetscape/reports/STAGE_41B_TARGETED_PIXEL_RELOCALIZATION.md
+
+runtime:
+  device: cuda:0
+  dtype: float16
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  semantic_probability_size: 256
+  maximum_peak_vram_gib: 7.8
+
+rules:
+  neighbor_offsets: [-30, 0, 30]
+  score_thresholds: [0.02, 0.05, 0.10]
+  primary_score_threshold: 0.02
+  semantic_walkable_probability_minimum: 0.02
+  ground_normal_abs_y_minimum: 0.45
+  depth_discontinuity_log_threshold: 0.12
+  minimum_primary_mask_ratio: 0.0005
+  minimum_supported_neighbor_views: 2
+  lower_half_only: true
+  generation_unlock_allowed: false
+

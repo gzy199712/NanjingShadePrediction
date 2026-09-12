@@ -1,0 +1,30 @@
+rule_version: phase_g3_step24f_endpoint_extension_grid_v1
+status: CHECK_ONLY
+input:
+  network_gdb: routing/data/topology/step24_repaired_network.gdb
+  layer: ThermalComfortNetworkRepaired
+parameters:
+  extension_distances_m: [10.0, 20.0, 30.0]
+  tip_search_buffers_m: [5.0, 10.0]
+  endpoint_rounding_m: 0.01
+  spatial_grid_size_m: 20.0
+  minimum_connector_m: 0.25
+  maximum_source_angle_deg: 30.0
+  maximum_endpoint_alignment_deg: 30.0
+  minimum_midline_crossing_angle_deg: 40.0
+  endpoint_fraction_tolerance: 0.03
+hard_reject:
+  bridge_conflict: true
+  tunnel_conflict: true
+  layer_conflict: true
+  grade_separation_conflict: true
+  source_or_target_repair_connector: true
+  motor_vehicle_only_classes: [motorway, motorway_link, trunk, trunk_link]
+automatic_rule:
+  allow_same_name_endpoint_continuation: true
+  allow_different_name_midline_t_junction: true
+  require_exact_structure_match: true
+outputs:
+  directory: routing/data/topology_extension_grid_check
+  report: routing/reports/STEP24F_ENDPOINT_EXTENSION_GRID_CHECK.md
+  log: routing/logs/step24f_endpoint_extension_grid_check.log

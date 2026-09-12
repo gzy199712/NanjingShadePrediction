@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Active-travel heading screen",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "point_id", "scene_type", "heading_assessments", "request_more_views", "confidence", "warnings"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "point_id": {"type": "string", "minLength": 1},
+    "scene_type": {"enum": ["public_sidewalk", "shared_walk_cycle", "pedestrian_space", "motor_vehicle_only", "covered_infrastructure", "uncertain"]},
+    "heading_assessments": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["heading", "visible", "kind", "confidence", "reason"],
+        "properties": {
+          "heading": {"type": "integer", "enum": [0, 90, 180, 270]},
+          "visible": {"enum": ["yes", "no", "uncertain"]},
+          "kind": {"enum": ["sidewalk", "cycle_lane", "shared_path", "pedestrian_area", "crossing", "none", "uncertain"]},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "reason": {"type": "string", "minLength": 1, "maxLength": 180}
+        }
+      }
+    },
+    "request_more_views": {"type": "boolean"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "warnings": {"type": "array", "maxItems": 2, "items": {"type": "string", "maxLength": 200}}
+  }
+}

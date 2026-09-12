@@ -1,0 +1,48 @@
+phase:
+  name: Ground-street and tree-gap candidate rediscovery
+  step: stage_45c
+
+inputs:
+  citywide_decisions: streetscape/data/planning/stage_32_citywide_final_decisions/citywide_final_planning_decisions.csv.gz
+  panorama_metadata: streetscape/data/panorama/stage_04_formal/metadata.jsonl
+
+outputs:
+  directory: streetscape/data/agent/stage_45c_candidate_rediscovery
+  report: streetscape/reports/STAGE_45C_GROUND_STREET_CANDIDATE_REDISCOVERY.md
+
+model:
+  id: Qwen/Qwen3-VL-2B-Instruct
+
+screening:
+  excluded_months: [11, 12, 1, 2]
+  minimum_svf: 0.28
+  maximum_gvi: 0.18
+  minimum_walkable_directions: 2
+  minimum_retained_walkable_ratio: 0.00001
+  continuous_tree_evidence_direction_minimum: 6
+  ranked_pool_size: 36
+  maximum_per_spatial_cell: 2
+  spatial_cell_degrees: 0.01
+
+labels:
+  - GROUND_WALKABLE_TREE_GAP
+  - GROUND_WALKABLE_YOUNG_TREE_ROW
+  - GROUND_WALKABLE_EXISTING_CANOPY
+  - GROUND_WALKABLE_NO_PLANTING_SPACE
+  - MOTOR_OR_EXPRESSWAY
+  - BRIDGE_OR_ELEVATED
+  - TUNNEL_OR_COVERED
+  - CONSTRUCTION_OR_BLOCKED
+  - UNCERTAIN
+
+runtime:
+  device: cuda
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  max_new_tokens: 24
+  maximum_peak_vram_gib: 7.8
+
+quality_gates:
+  minimum_classified_fraction: 1.0
+  minimum_tree_gap_candidates: 1
+  maximum_failure_rate: 0.0

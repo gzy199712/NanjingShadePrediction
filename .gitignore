@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Environments and editors
+.venv/
+venv/
+env/
+.conda/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local models, caches and logs
+.cache/
+.local/
+models/
+*.log
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Private or generated data
+data/**
+!data/README.md
+routing/data/**
+routing/outputs/**
+outputs/**
+routing/logs/**
+streetscape/data/**
+streetscape/figures/**
+training/cache/**
+training/checkpoints/**
+training/predictions/**
+training/metrics/**
+training/figures/**
+training/logs/**
+artifacts/**
+author_workspace/**
+
+# Generated reports
+routing/reports/**
+streetscape/reports/**
+training/reports/**

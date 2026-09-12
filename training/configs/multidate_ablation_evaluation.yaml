@@ -1,0 +1,81 @@
+project:
+  root: ../..
+  training_data: data/training_data
+
+inputs:
+  manifest: multiweather/step115_spatiotemporal_split/training_manifest_spatiotemporal.csv
+  semantic_features: static/semantic_features_8975.csv
+  static_feature_schema: static/static_feature_schema.json
+  dino_mean_features: static/dinov2_mean_features_8975.csv
+  dino_window_features: static/dinov2_window_features.npy
+  dino_window_index: static/dinov2_window_index.csv
+  dynamic_conditions: multiweather/step114_training_tables/dynamic_conditions_multidate.csv
+  labels: multiweather/step114_training_tables/point_hour_labels_multidate.csv
+  spatial_split: splits/spatial_split_assignments.csv
+  model_input_spec: manifest/model_input_spec.yaml
+  model_target_spec: manifest/model_target_spec.yaml
+  training_data_schema: manifest/training_data_schema.json
+  overlap_pairs_qc: artifacts/intermediate/pipeline_records/steps/step7_buffer_overlap/buffer_overlap_pairs.csv
+
+preflight:
+  output_dir: training/reports/ablation_evaluation
+
+runtime:
+  device: cuda
+  mixed_precision: true
+  pin_memory: true
+
+training:
+  checkpoint_root: training/checkpoints/multidate_ablation
+  baseline_checkpoint_root: training/checkpoints/multidate_full
+  seeds: [42, 52, 62]
+  dropout: 0.1
+
+model:
+  directional_input_dim: 768
+  directional_hidden_dim: 256
+  attention_heads: 8
+  semantic_hidden_dim: 64
+  global_dino_hidden_dim: 128
+  dynamic_hidden_dim: 256
+  fusion_hidden_dims: [512, 256]
+
+evaluation:
+  batch_size: 512
+  num_workers: 4
+  checkpoint_kind: best
+  utci_version: 1.0.0
+  metrics_dir: training/metrics/multidate_ablation_evaluation
+  prediction_dir: training/predictions/multidate_ablation_test
+  report_dir: training/reports/ablation_evaluation
+  log_path: training/logs/multidate_ablation/step122.log
+  strict_view: unseen_points_unseen_weather
+  test_views:
+    unseen_points_seen_weather: test_unseen_points_seen_weather
+    seen_points_unseen_weather: test_seen_points_unseen_weather
+    unseen_points_unseen_weather: test_unseen_points_unseen_weather
+
+groups:
+  visual_semantic:
+    - id: no_global_dinov2
+      use_global_dinov2: false
+    - id: no_directional_dinov2
+      use_directional_dinov2: false
+    - id: no_semantic_structure
+      use_semantic_structure: false
+  weather:
+    - id: no_solar_geometry
+      zero_dynamic_fields: [solar_altitude, sin_solar_azimuth, cos_solar_azimuth, sin_solar_altitude, cos_solar_altitude]
+    - id: no_thermodynamic_weather
+      zero_dynamic_fields: [air_temperature, relative_humidity]
+    - id: no_wind
+      zero_dynamic_fields: [wind_speed]
+    - id: no_shortwave_radiation
+      zero_dynamic_fields: [global_shortwave_radiation, direct_shortwave_radiation, diffuse_shortwave_radiation]
+  fusion_multitask:
+    - id: mean_direction_pooling
+      use_cross_attention: false
+    - id: no_azimuth_encoding
+      use_azimuth_encoding: false
+    - id: independent_prediction_heads
+      connect_shade_to_tmrt: false

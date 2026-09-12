@@ -1,0 +1,20 @@
+project_root: .
+selected_dates_csv: data/training_data/multiweather/step112_era5_weather_selection/selected_representative_weather_dates.csv
+hourly_weather_csv: data/training_data/multiweather/step112_era5_weather_selection/era5_hourly_nanjing_202407_202408.csv
+era5_directory: data/raw/ERA5_Nanjing_202407_202408
+output_directory: data/training_data/multiweather/step113_solweig_gpu
+process_directory: artifacts/intermediate/pipeline_records/steps/step113_solweig_gpu
+static_cache_directory: artifacts/intermediate/pipeline_records/steps/step113_solweig_gpu/static_cache
+geometry_reference_date: '2024-07-29'
+local_hours: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+rasters:
+  building_dsm: D:/Desktop/NJSummerWinter/UMEP_data_Ready_to_process/TmrtData10m/BuildingDSM10m_results.tif
+  dem: D:/Desktop/NJSummerWinter/UMEP_data_Ready_to_process/TmrtData10m/DEM10m_results.tif
+  tree_dsm: D:/Desktop/NJSummerWinter/UMEP_data_Ready_to_process/TmrtData10m/TreeDSM10m_results.tif
+  landcover: D:/Desktop/NJSummerWinter/UMEP_data_Ready_to_process/TmrtData10m/LCumep10m_outside.tif
+tile_size: 1000
+overlap: 100
+require_cuda: true
+static_preprocess_workers: 4
+cleanup_intermediate_after_merge: true
+output_compression: DEFLATE

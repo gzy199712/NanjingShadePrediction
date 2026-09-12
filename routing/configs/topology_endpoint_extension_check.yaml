@@ -1,0 +1,55 @@
+rule_version: phase_g3_topology_endpoint_extension_check_v1
+status: CHECK_ONLY_NOT_APPROVED
+
+input:
+  repaired_network_gdb: routing/data/topology/step24_repaired_network.gdb
+  layer: ThermalComfortNetworkRepaired
+  formal_graph: routing/data/graph/step27_route_graph.npz
+  od_samples: routing/outputs/tables/step27_validation_od_samples.csv
+  road_classification: routing/data/candidate_network/road_thermal_classification.csv
+
+geometry:
+  scan_scope: focus_od_corridor
+  staged_extension_distances_m: [3.0, 5.0, 10.0, 15.0]
+  maximum_extension_m: 15.0
+  minimum_extension_m: 0.25
+  endpoint_rounding_m: 0.001
+  spatial_grid_size_m: 20.0
+  minimum_midline_crossing_angle_deg: 25.0
+  endpoint_fraction_tolerance: 0.02
+
+hard_reject:
+  same_edge: true
+  source_not_degree_one: true
+  source_is_repair_connector: true
+  target_is_repair_connector: true
+  bridge_conflict: true
+  tunnel_conflict: true
+  layer_conflict: true
+  grade_separation_conflict: true
+  motor_vehicle_only: true
+
+review:
+  all_candidates_manual: true
+  flag_different_name_or_ref: true
+  flag_different_fclass: true
+  flag_endpoint_junction: true
+  no_formal_network_write: true
+
+focus_case:
+  od_id: od_025
+  corridor_buffer_m: 500.0
+  baseline_shortest_m: 26130.711887836456
+
+network_gap_diagnostic:
+  maximum_gap_m: 100.0
+  corridor_buffer_m: 1000.0
+  maximum_bidirectional_alignment_deg: 15.0
+  minimum_material_route_saving_m: 1000.0
+
+outputs:
+  directory: routing/data/topology_extension_check
+  gdb: routing/data/topology_extension_check/step24b_endpoint_extension_check.gdb
+  write_candidate_gdb: false
+  report: routing/reports/STEP24B_ENDPOINT_EXTENSION_CHECK_REPORT.md
+  log: routing/logs/step24b_endpoint_extension_check.log

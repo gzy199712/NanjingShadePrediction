@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbanshade.local/schemas/planner-agent-response-v1.json",
+  "title": "UrbanShade planner agent response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "point_id",
+    "scene_type",
+    "active_travel_eligible",
+    "shade_need",
+    "existing_canopy",
+    "recommended_action",
+    "target_sectors",
+    "confidence",
+    "evidence",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "point_id": {"type": "string", "minLength": 1},
+    "scene_type": {
+      "enum": [
+        "public_sidewalk",
+        "shared_walk_cycle",
+        "pedestrian_space",
+        "motor_vehicle_only",
+        "covered_infrastructure",
+        "other",
+        "uncertain"
+      ]
+    },
+    "active_travel_eligible": {"enum": ["yes", "no", "uncertain"]},
+    "shade_need": {"enum": ["none", "low", "moderate", "high", "uncertain"]},
+    "existing_canopy": {
+      "enum": ["adequate", "continuous", "discontinuous", "sparse", "leaf_off", "none", "uncertain"]
+    },
+    "recommended_action": {
+      "enum": ["maintain", "tree_first", "shade_facility_supplement", "planner_review", "abstain"]
+    },
+    "target_sectors": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "integer", "minimum": 0, "maximum": 23}
+    },
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "claim"],
+        "properties": {
+          "source": {
+            "enum": ["panorama", "direction_view", "semantic", "depth", "svf", "thermal", "road_context", "retrieved_case", "tool"]
+          },
+          "claim": {"type": "string", "minLength": 1, "maxLength": 500},
+          "sector": {"type": ["integer", "null"], "minimum": 0, "maximum": 23}
+        }
+      }
+    },
+    "requested_tools": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "measure_svf",
+          "locate_walkable_area",
+          "detect_existing_canopy",
+          "estimate_depth_ground",
+          "retrieve_similar_cases",
+          "propose_tree_layout",
+          "render_counterfactual",
+          "evaluate_counterfactual"
+        ]
+      },
+      "default": []
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 300}
+    }
+  }
+}

@@ -1,0 +1,24 @@
+project_root: .
+inputs:
+  metrics: training/metrics/multidate_evaluation/test_view_overall_metrics.csv
+  hourly_metrics: training/metrics/multidate_evaluation/test_view_hourly_metrics.csv
+  daily_metrics: training/metrics/multidate_evaluation/test_view_daily_metrics.csv
+  original_metrics: training/metrics/evaluation/evaluation_overall_metrics.csv
+  predictions:
+    unseen_points_seen_weather: training/predictions/multidate_test/unseen_points_seen_weather_predictions.csv
+    seen_points_unseen_weather: training/predictions/multidate_test/seen_points_unseen_weather_predictions.csv
+    unseen_points_unseen_weather: training/predictions/multidate_test/unseen_points_unseen_weather_predictions.csv
+outputs:
+  metrics_directory: training/metrics/multidate_reporting
+  figure_directory: training/figures/multidate_evaluation
+  report_directory: training/reports/multidate_evaluation
+  record_directory: artifacts/intermediate/pipeline_records/steps/step119_multidate_reporting
+bootstrap:
+  seed: 20240809
+  replicates: 2000
+  confidence_level: 0.95
+  unit: point_id_cluster_conditional_on_frozen_weather_dates
+reporting:
+  dpi: 300
+  formats: [png, pdf]
+  primary_view: unseen_points_unseen_weather

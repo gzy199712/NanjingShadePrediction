@@ -1,0 +1,32 @@
+project_root: .
+model:
+  model_id: nanjing-thermal-multidate
+  architecture: solar-directional-multitask-full
+  official_ensemble_seeds: [42, 52, 62, 72, 82]
+  checkpoint_root: training/checkpoints/multidate_full
+  checkpoint_kind: best
+  scaler: training/cache/scalers/multidate_full_train_scalers.json
+  training_config: training/configs/multidate_formal.yaml
+  model_source: training/src/model.py
+  inference_source: training/src/inference.py
+  utci_source: training/src/utci.py
+inputs:
+  step115_summary: data/training_data/multiweather/step115_spatiotemporal_split/summary.json
+  weather_split: data/training_data/multiweather/step115_spatiotemporal_split/weather_date_split.csv
+  dynamic_ranges: data/training_data/multiweather/step115_spatiotemporal_split/dynamic_feature_ranges_by_weather_split.csv
+  step117_summary: training/metrics/multidate_full/formal_training_summary.json
+  step118_summary: training/metrics/multidate_evaluation/evaluation_summary.json
+  step118_metrics: training/metrics/multidate_evaluation/test_view_overall_metrics.csv
+  step119_ci: training/metrics/multidate_reporting/bootstrap_confidence_intervals.csv
+  step123_summary: training/metrics/multidate_ablation_reporting/summary.json
+  step123_ci: training/metrics/multidate_ablation_reporting/paired_bootstrap_degradation_ci.csv
+outputs:
+  registry_directory: training/model_registry/nanjing_thermal_multidate
+  report_directory: training/reports/model_finalization
+  record_directory: artifacts/intermediate/pipeline_records/steps/step124_model_finalization
+decision:
+  official_model: full_five_seed_ensemble
+  selection_basis: preregistered_full_architecture_selected_on_validation_only
+  ablations_role: scientific_interpretation_only
+  test_adaptive_architecture_change: forbidden
+  deployment_status: frozen_research_model_ready_for_controlled_inference

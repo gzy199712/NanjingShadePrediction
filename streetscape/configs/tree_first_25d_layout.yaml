@@ -1,0 +1,47 @@
+phase:
+  name: Tree-first semantic depth 2.5D layout
+  step: stage_45
+
+inputs:
+  agent_results: streetscape/data/agent/stage_43_tool_constrained_agent/agent_pilot_results.csv
+  windows: streetscape/data/agent/stage_44_perspective_windows
+
+outputs:
+  directory: streetscape/data/agent/stage_45_tree_first_layout
+  report: streetscape/reports/STAGE_45_TREE_FIRST_25D_LAYOUT.md
+
+models:
+  semantic: models/facebook_mask2former-swin-large-mapillary-vistas-semantic
+  depth: .local/models/depth-anything-v2-metric-outdoor-small-hf
+
+projection:
+  window_size: 512
+  analysis_size: 128
+  fov_degrees: 100.0
+
+layout:
+  semantic_confidence_minimum: 0.45
+  walkable_score_minimum: 0.20
+  ground_normal_abs_y_minimum: 0.35
+  obstacle_probability_maximum: 0.35
+  vegetation_probability_maximum: 0.35
+  depth_minimum_m: 2.0
+  depth_maximum_m: 30.0
+  desired_tree_count: 4
+  minimum_tree_count: 3
+  crown_diameter_m: 7.0
+  crown_center_height_m: 6.0
+  trunk_width_m: 0.30
+  minimum_crown_diameter_pixels: 80
+  maximum_crown_diameter_pixels: 260
+
+runtime:
+  device: cuda
+  dtype: float16
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  maximum_peak_vram_gib: 7.8
+
+quality_gates:
+  minimum_candidate_ratio: 0.001
+  maximum_failure_rate: 0.0

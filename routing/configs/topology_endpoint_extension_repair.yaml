@@ -1,0 +1,25 @@
+rule_version: phase_g3_step24g_endpoint_extension_repair_v1
+status: APPROVED_BY_USER_REQUEST
+input:
+  candidates_csv: routing/data/topology_extension_grid_check/endpoint_extension_candidates.csv
+  formal_network_gdb: routing/data/topology/step24_repaired_network.gdb
+  repaired_layer: ThermalComfortNetworkRepaired
+  connector_layer: TopologyRepairConnectors
+selection:
+  candidate_type: same_name_endpoint_continuation
+  require_same_fclass: true
+  maximum_source_angle_deg: 15.0
+  maximum_target_alignment_deg: 15.0
+  require_mutual_nearest_endpoint: true
+  require_exact_structure_match: true
+  exclude_t_junctions_from_automatic_repair: true
+  expected_connector_count: 448
+outputs:
+  shortlist_csv: routing/data/topology_extension_repair/endpoint_extension_shortlist.csv
+  audit_csv: routing/data/topology_extension_repair/applied_connectors.csv
+  summary_json: routing/data/topology_extension_repair/summary.json
+  qc_json: routing/data/topology_extension_repair/qc.json
+  failed_csv: routing/data/topology_extension_repair/failed_files.csv
+  backup_gdb: routing/data/topology/step24_repaired_network_before_step24g_endpoint_extension.gdb
+  log: routing/logs/step24g_endpoint_extension_repair.log
+  report: routing/reports/STEP24G_ENDPOINT_EXTENSION_REPAIR.md

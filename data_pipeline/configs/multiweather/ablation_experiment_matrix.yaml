@@ -1,0 +1,61 @@
+project_root: .
+status: design_frozen_pending_multi_date_solweig_labels
+base_model_config: training/configs/multitask_main.yaml
+spatial_split_policy: preserve_existing_point_level_train_validation_test_assignments
+temporal_split_policy:
+  train_weather_dates_ratio: 0.70
+  validation_weather_dates_ratio: 0.15
+  test_weather_dates_ratio: 0.15
+  stratify_by: [weather_regime, weekly_period]
+  final_test_views:
+    - unseen_points_seen_weather
+    - seen_points_unseen_weather
+    - unseen_points_unseen_weather
+primary_seeds: [42, 52, 62]
+full_model_reporting_seeds: [42, 52, 62, 72, 82]
+primary_ablations:
+  - id: full_model
+    remove: []
+  - id: no_global_dinov2
+    remove: [global_dinov2_branch]
+  - id: no_directional_dinov2
+    remove: [directional_dinov2_branch]
+  - id: no_semantic_structure
+    remove: [semantic_structure_branch]
+  - id: no_solar_geometry
+    remove: [solar_altitude, solar_azimuth_encoding]
+  - id: no_thermodynamic_weather
+    remove: [air_temperature, relative_humidity]
+  - id: no_wind
+    remove: [wind_speed]
+  - id: no_shortwave_radiation
+    remove: [global_shortwave_radiation, direct_shortwave_radiation, diffuse_shortwave_radiation]
+  - id: mean_direction_pooling
+    replace: {solar_conditioned_cross_attention: arithmetic_mean_pooling}
+  - id: no_azimuth_encoding
+    remove: [direction_token_azimuth_encoding]
+  - id: independent_prediction_heads
+    remove: [predicted_shade_to_tmrt_connection]
+secondary_parameter_ablations:
+  run_only_after_group_ablation:
+    - air_temperature
+    - relative_humidity
+    - wind_speed
+    - global_shortwave_radiation
+    - direct_shortwave_radiation
+    - diffuse_shortwave_radiation
+explainability:
+  - grouped_permutation_importance_on_frozen_test
+  - integrated_gradients_by_input_branch
+  - cross_attention_direction_stability_across_seeds
+  - attention_vs_solar_azimuth_alignment
+  - paired_date_block_bootstrap_95ci
+report_metrics:
+  targets: [shade_rate, tmrt_celsius, utci_celsius]
+  metrics: [MAE, RMSE, R2, bias, Pearson]
+  strata: [weather_regime, date, hour, observed_tmrt_quintile]
+scientific_rules:
+  attention_weights_are_not_causal_importance: true
+  test_dates_must_not_select_architecture: true
+  report_effect_size_with_95ci: true
+  correct_multiple_comparisons: benjamini_hochberg

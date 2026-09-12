@@ -1,0 +1,31 @@
+phase:
+  name: Panorama perspective-window spherical correspondence
+  step: stage_44
+
+inputs:
+  agent_results: streetscape/data/agent/stage_43_tool_constrained_agent/agent_pilot_results.csv
+  benchmark: streetscape/data/agent/stage_37_foundation/planner_agent_benchmark_manifest.csv
+
+outputs:
+  directory: streetscape/data/agent/stage_44_perspective_windows
+  report: streetscape/reports/STAGE_44_PANORAMA_PERSPECTIVE_WINDOWS.md
+
+projection:
+  panorama_width: 2048
+  panorama_height: 512
+  window_size: 512
+  horizontal_fov_degrees: 100.0
+  panorama_vertical_half_extent_degrees: 43.984654
+  headings: [0, 45, 90, 135, 180, 225, 270, 315]
+  north_at_x0: true
+
+runtime:
+  device: cuda
+  allow_cpu_fallback: false
+
+quality_gates:
+  minimum_planning_band_coverage: 0.98
+  planning_band_y_fraction: [0.10, 0.90]
+  maximum_center_azimuth_error_degrees: 0.20
+  maximum_roundtrip_mae: 8.0
+  maximum_failure_rate: 0.0

@@ -1,0 +1,70 @@
+phase:
+  name: Planner Agent Foundation
+  step: stage_37
+  status: preflight
+  principle: multimodal_agent_first_structure_first_aigc
+
+runtime:
+  device: cuda
+  require_full_gpu: true
+  allow_cpu_offload: false
+  allow_cpu_fallback: false
+  minimum_free_disk_gib: 40
+
+inputs:
+  decisions: streetscape/data/planning/stage_32_citywide_final_decisions/citywide_final_planning_decisions.csv.gz
+  panorama_metadata: streetscape/data/panorama/stage_04_formal/metadata.csv
+  panorama_dir: streetscape/data/panorama/stage_04_formal/images
+  response_schema: streetscape/schemas/planner_agent_response.schema.json
+
+outputs:
+  directory: streetscape/data/agent/stage_37_foundation
+  report: streetscape/reports/STAGE_37_PLANNER_AGENT_FOUNDATION_PREFLIGHT.md
+
+model_candidates:
+  - role: multimodal_reasoner_small
+    model_id: Qwen/Qwen3-VL-2B-Instruct
+    license: Apache-2.0
+    execution: full_gpu_quantized_or_bf16_smoke
+  - role: multimodal_reasoner_primary
+    model_id: Qwen/Qwen3-VL-4B-Instruct
+    license: Apache-2.0
+    execution: full_gpu_4bit_only_on_8gb
+  - role: multimodal_retrieval
+    model_id: Qwen/Qwen3-VL-Embedding-2B
+    license: Apache-2.0
+    execution: full_gpu_sequential
+  - role: image_editor_candidate
+    model_id: black-forest-labs/FLUX.2-klein-4B
+    license: Apache-2.0
+    official_vram_gib: 13
+    execution: reject_bf16_on_8gb_quantized_full_gpu_smoke_required
+
+benchmark:
+  seed: 20260817
+  sort_fields: [semantic_sky_ratio, semantic_vegetation_ratio, point_id]
+  strata:
+    TREE_PRIORITY_CANDIDATE: all
+    ACTIONABLE_VISUAL_ADVICE: all
+    NO_INTERVENTION_LOW_SVF: 4
+    EXISTING_TREE_ROW_COVERAGE_REVIEW: 4
+    EXISTING_TREE_PHENOLOGY_REVIEW: 4
+    EXISTING_YOUNG_OR_SPARSE_TREE_GROWTH_REVIEW: 4
+    AUTO_PLANNING_ABSTAIN_INSUFFICIENT_VISIBLE_WALKABLE: 4
+    MOTOR_VEHICLE_ONLY_EXCLUDED: 4
+    NO_NEW_TREE_EXISTING_SHADE_OR_CANOPY: 3
+    AUTO_PLANNING_ABSTAIN_PHENOLOGY_UNCERTAIN: 3
+    NO_INTERVENTION_COVERED_INFRASTRUCTURE: all
+
+planned_stages:
+  - stage_38_qwen3vl_quantized_single_point
+  - stage_39_structured_streetscape_qa
+  - stage_40_active_travel_recognition_rescue
+  - stage_41_walkable_grounding_evidence_fusion
+  - stage_42_multimodal_case_embedding_rag
+  - stage_43_planner_agent_tools
+  - stage_44_panorama_perspective_windows
+  - stage_45_tree_first_semantic_layout
+  - stage_46_full_gpu_image_editor_preflight
+  - stage_47_generation_acceptance_thermal_evaluation
+  - stage_48_qwen3vl_qlora_decision

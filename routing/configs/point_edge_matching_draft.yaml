@@ -1,0 +1,40 @@
+rule_version: phase_g4_point_edge_draft_v1
+status: APPROVED
+
+candidate_distances_m: [15.0, 25.0, 50.0, 75.0]
+maximum_candidate_distance_m: 75.0
+top_candidates_per_point: 5
+
+score_weights:
+  distance: 0.55
+  direction: 0.30
+  road_class: 0.05
+  level_uncertainty: 0.10
+
+score_components:
+  distance_normalization_m: 75.0
+  direction_normalization_deg: 90.0
+  topology_connector_class_cost: 0.25
+  ordinary_thermal_road_class_cost: 0.0
+  grade_separated_without_point_level_cost: 0.5
+  ground_level_cost: 0.0
+
+confidence_preview:
+  high_max_distance_m: 15.0
+  high_max_direction_difference_deg: 30.0
+  high_min_score_gap: 0.10
+  medium_max_distance_m: 50.0
+  medium_min_score_gap: 0.05
+
+missing_move_dir_policy: distance_only_and_manual_review
+unknown_level_policy: retain_candidate_with_penalty_and_manual_review
+formal_mapping_written: false
+formal_accept_confidence: [high, medium]
+low_confidence_policy: reject_mapping_and_retain_for_manual_review
+unmatched_policy: retain_unmatched_without_forced_edge
+
+approval:
+  approved: true
+  approved_by: user
+  approved_at: "2026-07-26T13:16:22+08:00"
+  notes: User approved 75 m candidate search; high/medium matches are formal, low/unmatched remain unmapped for review.

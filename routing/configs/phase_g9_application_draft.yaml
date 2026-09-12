@@ -1,0 +1,60 @@
+rule_version: phase_g9_application_check_v1
+status: FORMAL_APPLICATION_RUN_AND_INDEPENDENT_QC_PASS
+
+scope:
+  phase: G9
+  step: 30
+  name: user_application_and_deployment
+  check_only: false
+  formal_service_started: false
+
+frozen_backend:
+  interface_module: routing/src/route_interface.py
+  schema_module: routing/src/route_tool_schema.py
+  cli_entrypoint: routing/scripts/Step29_route_cli.py
+  formal_summary: routing/data/interface/step29_formal_summary.json
+  independent_qc: routing/data/interface/step29_formal_independent_qc.json
+  required_status: PASS
+
+recommended_delivery:
+  target: localhost_browser_application
+  bind_host: 127.0.0.1
+  port: 8765
+  deterministic_backend_required: true
+  natural_language_layer_optional: false
+  application_must_work_without_llm: true
+  external_geocoder_allowed: false
+  external_map_tiles_allowed: false
+  exact_location_persistence_allowed: false
+  request_body_logging_allowed: false
+
+required_user_workflow:
+  - enter_or_search_origin
+  - resolve_ambiguous_place
+  - enter_or_search_destination
+  - select_hour_6_to_18
+  - select_walk_bike_or_shared
+  - compare_four_route_objectives
+  - inspect_distance_thermal_uncertainty_and_fallback
+  - export_png_pdf_or_file_geodatabase
+
+deployment_candidates:
+  preferred_api: fastapi
+  preferred_server: uvicorn
+  preferred_frontend: static_html_css_javascript
+  preferred_map: offline_local_map
+  do_not_modify_arcpy35_during_check: true
+  separate_runtime_environment_recommended: true
+
+pending_user_decisions:
+  []
+
+approval:
+  check_started_by_user: true
+  formal_run_approved: true
+  approved_by: user
+  approved_at: 2026-07-26
+  llm_integration_in_scope: false
+  formal_run_completed: true
+  independent_qc_passed: true
+  ready_for_llm_integration: true

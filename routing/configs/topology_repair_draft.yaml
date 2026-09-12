@@ -1,0 +1,31 @@
+rule_version: phase_g3_topology_draft_v1
+status: APPROVED
+
+scope:
+  input_layer: ThermalComfortRelevantRoads
+  preserve_motor_vehicle_only_layer: true
+  modify_source_osm: false
+
+tolerance_candidates_m: [1.0, 2.0, 3.0]
+approved_tolerance_m: 2.0
+
+hard_reject:
+  same_source_edge: true
+  missing_edge_reference: true
+  motor_vehicle_only_edge: true
+  bridge_status_conflict: true
+  tunnel_status_conflict: true
+  layer_conflict: true
+  grade_separation_conflict: true
+
+manual_review:
+  all_remaining_candidates: true
+  different_fclass: true
+  parallel_or_collinear_candidate: true
+  direction_difference_over_deg: 45.0
+
+approval:
+  approved: true
+  approved_by: user
+  approved_at: "2026-07-26T12:52:40+08:00"
+  notes: User approved all 57 hard-conflict-filtered candidates within 2 m for formal Step24 execution.

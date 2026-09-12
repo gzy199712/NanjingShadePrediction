@@ -1,0 +1,33 @@
+step: stage_33
+title: citywide_terminal_planning_visualization
+backend: python_matplotlib_standard_shapefile_reader
+inputs:
+  decisions: streetscape/data/planning/stage_32_citywide_final_decisions/citywide_final_planning_decisions.csv.gz
+  boundary: data/raw/Nanjing_center_boundary/Nanjing_center_UTM50N.shp
+  panoramas: streetscape/data/panorama/stage_04_formal/images
+outputs:
+  directory: streetscape/figures/stage_33_citywide_terminal_planning
+  basename: stage_33_citywide_terminal_planning
+  formats: [png, pdf, svg, tiff]
+  png_dpi: 400
+  tiff_dpi: 600
+eligible_point_ids: [6155, 9683, 14883, 15725, 16432]
+decision_groups:
+  maintain_or_no_intervention:
+    - NO_INTERVENTION_LOW_SVF
+    - NO_NEW_TREE_EXISTING_SHADE_OR_CANOPY
+    - NO_INTERVENTION_COVERED_INFRASTRUCTURE
+  existing_tree_review:
+    - EXISTING_TREE_ROW_COVERAGE_REVIEW
+    - EXISTING_TREE_PHENOLOGY_REVIEW
+    - EXISTING_YOUNG_OR_SPARSE_TREE_GROWTH_REVIEW
+    - AUTO_PLANNING_ABSTAIN_PHENOLOGY_UNCERTAIN
+  excluded_or_abstained:
+    - MOTOR_VEHICLE_ONLY_EXCLUDED
+    - AUTO_PLANNING_ABSTAIN_INSUFFICIENT_VISIBLE_WALKABLE
+  optimization_eligible:
+    - TREE_PRIORITY_CANDIDATE
+    - ACTIONABLE_VISUAL_ADVICE
+evidence_boundary: >-
+  Tree and walkable-direction evidence are multiview planning proxies, not
+  independent tree counts, causal canopy shade, or construction feasibility.

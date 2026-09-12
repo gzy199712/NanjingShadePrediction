@@ -1,0 +1,39 @@
+rule_version: phase_g3_step24c_od025_aligned_gap_v1
+status: APPROVED
+
+approval:
+  approved: true
+  scope: gap_0001_only
+
+input:
+  formal_network_gdb: routing/data/topology/step24_repaired_network.gdb
+  repaired_layer: ThermalComfortNetworkRepaired
+  connector_layer: TopologyRepairConnectors
+
+repair:
+  candidate_id: gap_0001
+  repair_id: TR00058
+  synthetic_edge_id: EXT_GAP_0001
+  source_node: 20605
+  target_node: 21844
+  source_edge_id: "139850966"
+  target_edge_id: "142491932"
+  source_x: 667766.551
+  source_y: 3543339.872
+  target_x: 667746.049
+  target_y: 3543244.353
+  distance_m: 97.69447970572016
+  source_outward_angle_deg: 1.700454061272343
+  target_outward_angle_deg: 2.6255870797273984
+  expected_baseline_od025_m: 26130.711887836456
+  expected_repaired_od025_m: 9511.025162579446
+
+outputs:
+  backup_gdb: routing/data/topology/step24_repaired_network_before_step24c.gdb
+  summary: routing/data/topology/step24c_formal_summary.json
+  qc: routing/data/topology/step24c_formal_qc.json
+  audit_csv: routing/data/topology/step24c_topology_repairs.csv
+  failed_csv: routing/data/topology/step24c_failed_records.csv
+  report: routing/reports/STEP24C_FORMAL_GAP_REPAIR_REPORT.md
+  log: routing/logs/step24c_formal_gap_repair.log
+

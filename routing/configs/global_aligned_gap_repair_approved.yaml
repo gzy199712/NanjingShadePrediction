@@ -1,0 +1,22 @@
+rule_version: phase_g3_step24e_global_aligned_gap_repair_v1
+status: APPROVED
+approval:
+  approved: true
+  basis: user_approved_same_safe_repair_for_other_points
+input:
+  formal_network_gdb: routing/data/topology/step24_repaired_network.gdb
+  shortlist: routing/configs/approved_global_aligned_gap_repairs.csv
+  repaired_layer: ThermalComfortNetworkRepaired
+  connector_layer: TopologyRepairConnectors
+validation:
+  expected_candidate_count: 4
+  maximum_gap_m: 30.0
+  maximum_endpoint_angle_deg: 5.0
+outputs:
+  backup_gdb: routing/data/topology/step24_repaired_network_before_step24e_global.gdb
+  summary: routing/data/topology/step24e_formal_summary.json
+  qc: routing/data/topology/step24e_formal_qc.json
+  audit_csv: routing/data/topology/step24e_global_repairs.csv
+  failed_csv: routing/data/topology/step24e_failed_records.csv
+  report: routing/reports/STEP24E_GLOBAL_ALIGNED_GAP_REPAIR_REPORT.md
+  log: routing/logs/step24e_global_gap_repair.log
