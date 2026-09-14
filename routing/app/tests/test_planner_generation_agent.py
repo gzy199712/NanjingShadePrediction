@@ -1,6 +1,11 @@
 """Regression checks for the planner-facing multimodal generation Agent contract."""
 
+import base64
+import io
+
 from pathlib import Path
+
+from PIL import Image
 
 from routing.app.backend import main
 
@@ -30,6 +35,60 @@ def test_upload_endpoint_merges_generation_agent_result(client, monkeypatch) -> 
     assert payload["agent_state"] == "SAFE_ABSTENTION"
     assert payload["generation_blockers"] == ["tree_gap_consensus"]
     assert payload["upload_persisted"] is False
+
+
+def test_upload_endpoint_allows_panorama_for_local_agent(client, monkeypatch) -> None:
+    semantic = {
+        "panorama_detected": True, "optimization_eligible": False,
+        "overlay_png_base64": "overlay", "suggestion_regions": [],
+    }
+    monkeypatch.setattr(main.PLANNER_ADAPTER, "analyze", lambda *args, **kwargs: semantic)
+    monkeypatch.setattr(main.PLANNER_ADAPTER, "close", lambda: None)
+    monkeypatch.setattr(main.PLANNER_GENERATION_AGENT, "analyze_and_generate", lambda *args, **kwargs: {
+        "agent_state": "SAFE_STOP", "generation_available": False,
+        "automatic_acceptance": False, "tool_trace": [],
+    })
+    response = client.post(
+        "/api/planner/analyze-upload",
+        files={"image": ("panorama.png", b"fake-image-bytes", "image/png")},
+    )
+    assert response.status_code == 200
+    assert response.json()["analysis_unit"] == "panorama"
+
+
+def test_human_external_candidate_rejection_never_publishes_image(client, monkeypatch) -> None:
+    source_buffer = io.BytesIO()
+    candidate_buffer = io.BytesIO()
+    mask_buffer = io.BytesIO()
+    Image.new("RGB", (4, 4), "black").save(source_buffer, format="PNG")
+    Image.new("RGB", (4, 4), "white").save(candidate_buffer, format="PNG")
+    mask = Image.new("L", (4, 4), 0)
+    mask.putpixel((1, 1), 255)
+    mask.save(mask_buffer, format="PNG")
+    source = {
+        "generation_candidate_available": True,
+        "proposal_mask_png_base64": base64.b64encode(mask_buffer.getvalue()).decode("ascii"),
+        "overlay_png_base64": "overlay", "ratios": {"vegetation": 0.0, "building": 0.2},
+        "svf": 0.5, "shade_optimization_need": "较高", "suggestion_regions": [],
+    }
+    candidate = {"ratios": {"vegetation": 0.3, "building": 0.2}, "svf": 0.4}
+    results = iter((source, candidate))
+    monkeypatch.setattr(main.PLANNER_ADAPTER, "analyze", lambda *args, **kwargs: next(results))
+    monkeypatch.setattr(main.PLANNER_ADAPTER, "close", lambda: None)
+    response = client.post(
+        "/api/planner/validate-external-generation",
+        files={
+            "source_image": ("source.png", source_buffer.getvalue(), "image/png"),
+            "generated_image": ("candidate.png", candidate_buffer.getvalue(), "image/png"),
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["source"] == "human_imported_external_image"
+    assert payload["external_request_made"] is False
+    assert payload["automatic_acceptance"] is False
+    assert payload["final_action"] == "planning_overlay"
+    assert "generated_panorama_png_base64" not in payload
 
 
 def test_agent_pipeline_scripts_are_present() -> None:
@@ -66,7 +125,7 @@ def test_orchestrator_parses_intent_and_routes_tools() -> None:
         "leaf_off_risk": False, "high_speed_road_suspected": False,
     })
     assert direction_plan["selected_action"] == "directional_perspective_plan"
-    assert "semantic_depth_25d_layout" in direction_plan["selected_tools"]
+    assert "tree_gap_analysis" in direction_plan["selected_tools"]
     assert plan["hidden_reasoning_exposed"] is False
     combined = parse_planner_intent("乔木种植走廊、树冠覆盖目标与人工遮阳补充复核区")
     assert combined["preferred_intervention"] == "tree_first"

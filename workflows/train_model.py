@@ -12,6 +12,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--include-ablation", action="store_true")
+    parser.add_argument("--include-baselines", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     logger = make_logger("model_training")
@@ -47,6 +48,19 @@ def main() -> int:
             for number, (name, path) in ablations.items():
                 command = [sys.executable, str(path), "--mode", "run"]
                 if number in (121, 122):
+                    command.append("--approved-by-user")
+                command.extend(extra)
+                stages.append(Stage(name, command))
+        if args.include_baselines:
+            baselines = {
+                125: ("train_baselines", scripts / "Step125_train_multidate_baselines.py"),
+                126: ("evaluate_baselines", scripts / "Step126_evaluate_multidate_baselines.py"),
+                127: ("report_baselines", scripts / "Step127_baseline_reporting.py"),
+            }
+            require_paths([path for _, path in baselines.values()], kind="file")
+            for number, (name, path) in baselines.items():
+                command = [sys.executable, str(path), "--mode", "run"]
+                if number in (125, 126):
                     command.append("--approved-by-user")
                 command.extend(extra)
                 stages.append(Stage(name, command))

@@ -1,0 +1,91 @@
+project:
+  root: ../..
+  training_data: data/training_data
+
+inputs:
+  manifest: multiweather/step115_spatiotemporal_split/training_manifest_spatiotemporal.csv
+  semantic_features: static/semantic_features_8975.csv
+  static_feature_schema: static/static_feature_schema.json
+  dino_mean_features: static/dinov2_mean_features_8975.csv
+  dino_window_features: static/dinov2_window_features.npy
+  dino_window_index: static/dinov2_window_index.csv
+  dynamic_conditions: multiweather/step114_training_tables/dynamic_conditions_multidate.csv
+  labels: multiweather/step114_training_tables/point_hour_labels_multidate.csv
+  spatial_split: splits/spatial_split_assignments.csv
+  model_input_spec: manifest/model_input_spec.yaml
+  model_target_spec: manifest/model_target_spec.yaml
+  training_data_schema: manifest/training_data_schema.json
+  overlap_pairs_qc: artifacts/intermediate/pipeline_records/steps/step7_buffer_overlap/buffer_overlap_pairs.csv
+
+preflight:
+  output_dir: training/reports/multidate_baselines
+
+partitions:
+  train: train
+  validation: validation_unseen_points_unseen_weather
+  test_views:
+    unseen_points_seen_weather: test_unseen_points_seen_weather
+    seen_points_unseen_weather: test_seen_points_unseen_weather
+    unseen_points_unseen_weather: test_unseen_points_unseen_weather
+
+training:
+  seeds: [42, 52, 62]
+  checkpoint_root: training/checkpoints/multidate_baselines
+  batch_size: 4096
+  inference_batch_size: 8192
+  max_epochs: 30
+  patience: 5
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  dropout: 0.1
+  hidden_dims: [256, 128]
+  directional_hidden_dim: 128
+  tree_algorithm: sklearn.ensemble.HistGradientBoostingRegressor
+  tree_max_iter: 200
+  tree_learning_rate: 0.05
+  tree_max_leaf_nodes: 31
+  static_pca_components: 128
+
+outputs:
+  prediction_root: training/predictions/multidate_baselines
+  metrics_root: training/metrics/multidate_baselines
+  figure_root: training/figures/multidate_baselines
+  report_root: training/reports/multidate_baselines
+
+proposed:
+  prediction_root: training/predictions/multidate_test
+  seeds: [42, 52, 62, 72, 82]
+
+bootstrap:
+  seed: 20240810
+  replicates: 2000
+  confidence_level: 0.95
+  unit: point_id_cluster_paired_across_models_conditional_on_frozen_test_weather
+
+reporting:
+  strict_view: unseen_points_unseen_weather
+  dpi: 300
+  formats: [png, pdf]
+
+models:
+  - id: mean_global
+    label: Global train mean
+    group: mean
+  - id: mean_hourly
+    label: Hourly train mean
+    group: mean
+  - id: weather_hgbr
+    label: Weather-only HGBR
+    group: tree
+  - id: static_hgbr
+    label: Static-only HGBR
+    group: tree
+  - id: multimodal_mlp
+    label: Multimodal MLP
+    group: neural
+  - id: directional_mlp
+    label: Directional MLP
+    group: neural
+  - id: proposed
+    label: Proposed model
+    group: proposed

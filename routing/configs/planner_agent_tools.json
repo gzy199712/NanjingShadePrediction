@@ -19,13 +19,14 @@
     }
   },
   "tools": [
-    {"name": "mask2former_semantic_overlay", "role": "observe", "device": "cuda", "required": true},
-    {"name": "qwen3_vl_scene_consensus", "role": "reason", "device": "cuda", "required": true},
-    {"name": "multimodal_rag_case_retrieval", "role": "reason", "device": "cuda", "required": true},
-    {"name": "spherical_perspective_windows", "role": "localize", "device": "cuda", "required": true},
-    {"name": "semantic_depth_25d_layout", "role": "localize", "device": "cuda", "required": true},
-    {"name": "powerpaint_tree_editor", "role": "generate", "device": "cuda", "required": false},
-    {"name": "translucent_planning_overlay", "role": "generate", "device": "cuda", "required": true},
-    {"name": "semantic_geometry_acceptance", "role": "verify", "device": "cuda", "required": true}
+    {"name": "road_space_analysis", "role": "observe", "device": "cuda", "required": true},
+    {"name": "phenology_review", "role": "verify", "device": "cuda", "required": true},
+    {"name": "tree_gap_analysis", "role": "reason", "device": "cuda", "required": true},
+    {"name": "directional_windows", "role": "localize", "device": "cuda", "required": true},
+    {"name": "tree_layout", "role": "localize", "device": "cuda", "required": true},
+    {"name": "structural_gate", "role": "verify", "device": "cuda", "required": true},
+    {"name": "local_generation", "role": "generate", "device": "cuda", "required": false},
+    {"name": "planning_overlay", "role": "render", "device": "cuda", "required": true},
+    {"name": "generation_acceptance", "role": "verify", "device": "cuda", "required": true}
   ]
 }

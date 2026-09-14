@@ -18,7 +18,7 @@
 |---|---:|---:|---:|
 | 遮荫率 | 0.1092 | 0.1527 | 0.7081 |
 | Tmrt | 2.1827 °C | 3.0147 °C | 0.9466 |
-| UTCI | 0.5043 °C | 0.6957 °C | 0.9735 |
+| UTCI | 0.4989 °C | 0.6889 °C | 0.9739 |
 
 ## 目录
 
@@ -70,6 +70,7 @@ python -m workflows.data_pipeline --stages 112 113 114 115 --execute
 python -m workflows.train_model
 python -m workflows.train_model --execute
 python -m workflows.train_model --execute --include-ablation
+python -m workflows.train_model --execute --include-baselines
 ```
 
 ### 启动导航和街景网页
@@ -133,6 +134,44 @@ UTCI `-0.63 °C`。
 
 这些数值来自训练模型对标准化遮阴干预的预评估，并非从生成图像像素重新提取的指标，也不是实测验证或
 场地级因果效应。生成图像在本项目中用于方案展示，模型训练集上的测试指标用于说明预评估可信度边界。
+
+## 模型实验结果
+
+以下结果均来自最严格的 `unseen_points_unseen_weather` 测试视图，共 34,996 条记录。MAE 和 RMSE 越低越好，R² 越高越好；Shade 为无量纲遮荫率，Tmrt 和 UTCI 的误差单位为 °C。
+
+### 消融实验
+
+消融实验使用种子 42、52、62 的三模型集成。Full model 为该组实验的三种子参考模型。
+
+| Model | Shade MAE | Shade RMSE | Shade R² | Tmrt MAE | Tmrt RMSE | Tmrt R² | UTCI MAE | UTCI RMSE | UTCI R² |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Full model (3-seed) | 0.1104 | 0.1541 | 0.7030 | 2.1916 | 3.0366 | 0.9458 | 0.5061 | 0.7008 | 0.9732 |
+| No global DINOv2 | 0.1114 | 0.1560 | 0.6954 | 2.2165 | 3.0842 | 0.9441 | 0.5120 | 0.7114 | 0.9723 |
+| No directional DINOv2 | 0.1185 | 0.1654 | 0.6576 | 2.3031 | 3.1747 | 0.9408 | 0.5318 | 0.7320 | 0.9707 |
+| No semantic structure | 0.1091 | 0.1531 | 0.7067 | 2.2027 | 3.0238 | 0.9463 | 0.5090 | 0.6982 | 0.9733 |
+| No solar geometry | 0.1187 | 0.1636 | 0.6650 | 2.7635 | 3.8256 | 0.9141 | 0.6348 | 0.8787 | 0.9578 |
+| No thermodynamic weather | 0.1106 | 0.1546 | 0.7009 | 2.6312 | 3.5285 | 0.9269 | 0.6087 | 0.8180 | 0.9634 |
+| No wind | 0.1096 | 0.1534 | 0.7056 | 2.1967 | 3.0248 | 0.9463 | 0.5069 | 0.6971 | 0.9734 |
+| No shortwave radiation | 0.1120 | 0.1560 | 0.6956 | 2.8990 | 3.8809 | 0.9115 | 0.6645 | 0.8883 | 0.9569 |
+| Mean direction pooling | 0.1162 | 0.1632 | 0.6668 | 2.3093 | 3.1550 | 0.9415 | 0.5338 | 0.7284 | 0.9710 |
+| No azimuth encoding | 0.1175 | 0.1648 | 0.6601 | 2.2992 | 3.1724 | 0.9409 | 0.5307 | 0.7318 | 0.9707 |
+| Independent prediction heads | 0.1095 | 0.1529 | 0.7075 | 2.1982 | 3.0364 | 0.9459 | 0.5077 | 0.7003 | 0.9732 |
+
+### 强基线比较
+
+可训练基线使用种子 42、52、62；Mean baseline 为确定性模型；Proposed 使用现有正式五种子模型集成。环境中未安装 XGBoost 或 LightGBM，因此树模型实际使用 sklearn `HistGradientBoostingRegressor`，Static-only 的 128 维 PCA 仅在 train 分区拟合。
+
+| Model | Shade MAE | Shade RMSE | Shade R² | Tmrt MAE | Tmrt RMSE | Tmrt R² | UTCI MAE | UTCI RMSE | UTCI R² |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Global train mean | 0.2282 | 0.2836 | -0.0063 | 10.9489 | 13.0595 | -0.0016 | 2.4694 | 2.9343 | 0.5263 |
+| Hourly train mean | 0.1875 | 0.2361 | 0.3025 | 4.5830 | 5.9017 | 0.7955 | 1.0436 | 1.3407 | 0.9011 |
+| Weather-only HGBR | 0.1875 | 0.2363 | 0.3017 | 3.6956 | 5.0082 | 0.8527 | 0.8390 | 1.1289 | 0.9299 |
+| Static-only HGBR | 0.1838 | 0.2363 | 0.3015 | 10.6209 | 12.7412 | 0.0466 | 2.3953 | 2.8626 | 0.5492 |
+| Multimodal MLP | 0.1244 | 0.1691 | 0.6422 | 2.5739 | 3.4034 | 0.9320 | 0.5876 | 0.7779 | 0.9667 |
+| Directional MLP | 0.1249 | 0.1685 | 0.6448 | 2.6023 | 3.4285 | 0.9310 | 0.5939 | 0.7832 | 0.9663 |
+| Proposed (5-seed) | 0.1092 | 0.1527 | 0.7081 | 2.1827 | 3.0147 | 0.9466 | 0.4989 | 0.6889 | 0.9739 |
+
+完整基线结果见 `training/metrics/multidate_baselines/overall_baseline_comparison.csv`，点位聚类 Bootstrap 置信区间见 `training/metrics/multidate_baselines/paired_baseline_bootstrap_ci.csv`。
 
 ## 技术说明
 

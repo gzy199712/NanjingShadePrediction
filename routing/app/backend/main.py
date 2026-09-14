@@ -49,6 +49,8 @@ from routing.app.backend.privacy import privacy_middleware, privacy_status
 from routing.app.backend.service_adapter import ServiceAdapter
 from routing.app.backend.planner_analysis_adapter import PlannerAnalysisAdapter
 from routing.app.backend.planner_generation_agent_adapter import PlannerGenerationAgentAdapter
+from routing.app.backend.planner_agent_orchestrator import PlannerAgentRuntime, build_assessment_agent_result
+from routing.app.backend.planner_agent_tools import PlannerAgentTool, PlannerToolRegistry, tool_result
 from routing.app.backend.multidate_contract import (
     model_status as multidate_model_status,
     scenarios as multidate_scenarios,
@@ -112,6 +114,9 @@ def _image2_teacher_reference(point_id: str, heading: int) -> dict[str, Any] | N
                 "quality_tier": "external_teacher_reference",
                 "image_png_base64": base64.b64encode(image_path.read_bytes()).decode("ascii"),
                 "benchmark_id": packaged["pair_id"],
+                "source": "human_imported_external_image",
+                "external_request_made": False,
+                "claim_boundary": "人工外部生成参考图；不是现场实测，也不是因果热效益验证。",
             }
     if not IMAGE2_TEACHER_BENCHMARK.is_dir():
         return None
@@ -127,6 +132,9 @@ def _image2_teacher_reference(point_id: str, heading: int) -> dict[str, Any] | N
             "quality_tier": "external_teacher_reference",
             "image_png_base64": base64.b64encode(image_path.read_bytes()).decode("ascii"),
             "benchmark_id": metadata.get("benchmark_id"),
+            "source": "human_imported_external_image",
+            "external_request_made": False,
+            "claim_boundary": "人工外部生成参考图；不是现场实测，也不是因果热效益验证。",
         }
     return None
 
@@ -166,7 +174,7 @@ def _planner_ready_teacher_generation(point_id: str, heading: int, hour: int) ->
         "automatic_acceptance": True,
         "planner_review_required": False,
         "agent_state": "IMAGE2_TEACHER_REFERENCE_AVAILABLE",
-        "agent_explanation": "该南京点位命中Image2教师样本；直接展示教师参考结果，不调用已验证不足的本地扩散模型。",
+        "agent_explanation": "该南京点位命中已导入并完成本地验收的外部教师样本；本次不发起外部请求。",
         "realistic_tree_png_base64": image_payload,
         "overlay_png_base64": guide_payload,
         "selected_seed": row["pair_id"],
@@ -194,6 +202,8 @@ def _planner_ready_teacher_generation(point_id: str, heading: int, hour: int) ->
         "full_gpu_verified": False,
         "cpu_fallback": False,
         "external_request_made": False,
+        "source": "human_imported_external_image",
+        "claim_boundary": "人工外部生成参考图；不是现场实测，也不是因果热效益验证。",
         "feedback_saved": False,
         "feedback_usage": "session_only_not_persisted",
     }
@@ -1324,9 +1334,10 @@ def planner_point_direction_analysis(point_id: str, heading: int, confidence: in
         planner_osm_road_context(point_id),
     )
     result = attach_reference_thermal_estimate(result, hour, point_id)
+    agent = build_assessment_agent_result(result, f"{point_id}:{heading}")
     teacher = _planner_ready_image2_row(point_id, heading)
     return {
-        **result, "point_id": point_id, "heading": heading,
+        **result, **agent, "point_id": point_id, "heading": heading,
         "source": "original_direction_view", "generation_invoked": False,
         "external_request_made": False,
         "teacher_reference_available": teacher is not None,
@@ -1518,7 +1529,7 @@ IMAGE2_GENERATION_PROMPT = (
 )
 
 
-def _image2_generation_request(
+def _manual_external_generation_package(
     image_path: Path, analysis: dict[str, Any], point_id: str, heading: int,
     confidence: int, hour: int, manual_mask_png_base64: str | None = None,
 ) -> dict[str, Any]:
@@ -1532,15 +1543,18 @@ def _image2_generation_request(
     return {
         "generation_available": False,
         "image2_request_available": True,
+        "manual_external_generation_package_available": True,
         "automatic_acceptance": False,
         "planner_review_required": False,
-        "agent_state": "IMAGE2_EXTERNAL_GENERATION_REQUEST_READY",
-        "agent_explanation": "本隔离项目不再调用本地扩散生成；请把 source_png_base64、planning_overlay_png_base64 和 prompt 发送给 Image2。",
+        "agent_state": "HUMAN_EXTERNAL_GENERATION_PACKAGE_READY",
+        "agent_explanation": "本地 Agent 已准备源图、规划叠加、掩膜和提示材料；用户可选择人工使用外部图像工具，程序不会发起外部请求。",
         "source_png_base64": base64.b64encode(image_path.read_bytes()).decode("ascii"),
         "planning_overlay_png_base64": analysis.get("overlay_png_base64"),
         "proposal_mask_png_base64": manual_mask_png_base64 or analysis.get("proposal_mask_png_base64"),
         "prompt": IMAGE2_GENERATION_PROMPT,
-        "generator": "Image2 external interface",
+        "generator": "human_operated_external_image_tool",
+        "source": "local_planning_package_for_human_external_generation",
+        "claim_boundary": "外部生成结果必须重新上传并通过本地验收；不是现场实测，也不是因果热效益验证。",
         "external_request_made": False,
         "local_diffusion_disabled": True,
         "point_id": point_id,
@@ -1549,6 +1563,72 @@ def _image2_generation_request(
         "confidence": confidence,
         "manual_mask_used": bool(manual_mask_png_base64),
     }
+
+
+def _external_candidate_acceptance(
+    source_path: Path, candidate_path: Path,
+    source: dict[str, Any], candidate: dict[str, Any],
+) -> dict[str, Any]:
+    source_rgb = np.asarray(Image.open(source_path).convert("RGB"), dtype=np.int16)
+    candidate_rgb = np.asarray(Image.open(candidate_path).convert("RGB"), dtype=np.int16)
+    if source_rgb.shape != candidate_rgb.shape:
+        return tool_result(
+            "generation_acceptance", "FAIL",
+            observations={"automatic_acceptance": False, "same_dimensions": False},
+            error="candidate_dimensions_do_not_match_source",
+        )
+    mask_payload = source.get("proposal_mask_png_base64")
+    if not mask_payload:
+        return tool_result(
+            "generation_acceptance", "FAIL",
+            observations={"automatic_acceptance": False, "proposal_mask_available": False},
+            error="source_has_no_reliable_proposal_mask",
+        )
+    height, width = source_rgb.shape[:2]
+    mask = np.asarray(
+        Image.open(io.BytesIO(base64.b64decode(str(mask_payload)))).convert("L")
+        .resize((width, height), Image.Resampling.NEAREST),
+    ) > 0
+    if not mask.any():
+        return tool_result(
+            "generation_acceptance", "FAIL",
+            observations={"automatic_acceptance": False, "proposal_mask_available": False},
+            error="source_proposal_mask_is_empty",
+        )
+    difference = np.max(np.abs(candidate_rgb - source_rgb), axis=2)
+    outside_max = int(difference[~mask].max()) if (~mask).any() else 0
+    changed_inside = float((difference[mask] > 8).mean())
+    source_ratios = source.get("ratios") or {}
+    candidate_ratios = candidate.get("ratios") or {}
+    vegetation_gain = float(candidate_ratios.get("vegetation", 0.0)) - float(source_ratios.get("vegetation", 0.0))
+    building_gain = float(candidate_ratios.get("building", 0.0)) - float(source_ratios.get("building", 0.0))
+    sky_change = float(candidate.get("svf", 0.0)) - float(source.get("svf", 0.0))
+    minimum_vegetation_gain = max(.0015, min(.012, float(mask.mean()) * .08))
+    gates = {
+        "source_generation_candidate": bool(source.get("generation_candidate_available", source.get("optimization_eligible"))),
+        "same_dimensions": True,
+        "preserve_outside_mask": outside_max == 0,
+        "target_region_fill": changed_inside >= .55,
+        "vegetation_gain": vegetation_gain >= minimum_vegetation_gain,
+        "building_fidelity": building_gain <= max(.004, vegetation_gain * .50),
+        "sky_geometry": sky_change <= .05,
+    }
+    accepted = all(gates.values())
+    metrics = {
+        "outside_mask_max_difference": outside_max,
+        "changed_fraction_inside_mask": round(changed_inside, 4),
+        "vegetation_ratio_gain": round(vegetation_gain, 4),
+        "minimum_vegetation_ratio_gain": round(minimum_vegetation_gain, 4),
+        "building_ratio_gain": round(building_gain, 4),
+        "directional_sky_view_change": round(sky_change, 4),
+    }
+    return tool_result(
+        "generation_acceptance", "PASS" if accepted else "FAIL",
+        observations={"automatic_acceptance": accepted, "acceptance_gates": gates, "acceptance_metrics": metrics},
+        artifacts={"candidate_filename": candidate_path.name, "width": width, "height": height},
+        warnings=[] if accepted else ["human_imported_candidate_rejected_and_hidden"],
+        error=None if accepted else "automatic_quality_gates_failed",
+    )
 
 
 def _generate_realistic_tree_scenario(
@@ -1858,7 +1938,7 @@ def planner_point_direction_realistic(point_id: str, heading: int, confidence: i
             "树木优先现实情景：排除道路尽头，仅编辑道路两侧已确认的树冠候选区",
             record["month"], confidence, planner_osm_road_context(point_id),
         )
-        return _image2_generation_request(
+        return _manual_external_generation_package(
             Path(record["image_path"]), analysis, point_id, heading, confidence, hour,
         )
 
@@ -1879,7 +1959,7 @@ def planner_point_direction_realistic_edited(
             "规划师已编辑树冠边界：保留道路尽头安全禁区，仅在确认后的道路两侧生成真实树木",
             record["month"], request.confidence, planner_osm_road_context(point_id),
         )
-        return _image2_generation_request(
+        return _manual_external_generation_package(
             Path(record["image_path"]), analysis, point_id, heading,
             request.confidence, request.hour, request.manual_mask_png_base64,
         )
@@ -1971,8 +2051,9 @@ def planner_point_all_directions(point_id: str, confidence: int = 65, hour: int 
     point_level = planner_points_data(hour)["points"]
     point = next(item for item in point_level if str(item["point_id"]) == point_id)
     continuity = result.get("side_shade_continuity") or {}
+    agent = build_assessment_agent_result(result, f"{point_id}:all-directions")
     return {
-        **result, "point_id": point_id, "hour": hour,
+        **result, **agent, "point_id": point_id, "hour": hour,
         "point_level_svf": point["svf"], "svf_good_reference": .30,
         "osm_road_context": planner_osm_road_context(point_id),
         "local_directional_gap_overrides_point_average": bool(
@@ -2078,16 +2159,14 @@ async def planner_analyze_upload(
         intent = planner_intent.strip()[:500]
         confidence = max(0, min(100, int(confidence)))
         result = PLANNER_ADAPTER.analyze(temporary, intent, month, confidence)
-        if result.get("panorama_detected"):
-            raise ValueError("规划方案已改为方位图优先；请上传单一视角街景，而不是360度全景图")
         PLANNER_ADAPTER.close()
         agent = PLANNER_GENERATION_AGENT.analyze_and_generate(
             temporary, intent, month, result
         )
         realistic: dict[str, Any] = {}
-        if bool(generate_realistic):
+        if bool(generate_realistic) and not agent.get("generation_available"):
             with PLANNER_REALISTIC_GENERATION_LOCK:
-                realistic = _image2_generation_request(
+                realistic = _manual_external_generation_package(
                     temporary, result, "upload", 0, confidence,
                     max(6, min(18, int(scenario_hour))),
                     manual_mask_png_base64.strip() or None,
@@ -2102,11 +2181,71 @@ async def planner_analyze_upload(
         )
         return {
             **merged, "upload_persisted": False, "external_request_made": False,
-            "analysis_unit": "single_perspective_direction_view",
+            "analysis_unit": "panorama" if result.get("panorama_detected") else "single_perspective_direction_view",
             "coordinate_assumption_used": lon is None,
         }
     finally:
         temporary.unlink(missing_ok=True)
+
+
+@app.post("/api/planner/validate-external-generation")
+async def planner_validate_external_generation(
+    source_image: UploadFile = File(...), generated_image: UploadFile = File(...),
+    planner_intent: str = Form(""), capture_month: int = Form(0),
+    confidence: int = Form(65), scenario_hour: int = Form(14),
+) -> dict[str, Any]:
+    supported = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
+    if source_image.content_type not in supported or generated_image.content_type not in supported:
+        raise ValueError("源图和人工生成候选仅支持PNG、JPEG或WebP")
+    source_payload = await source_image.read(20 * 1024 * 1024 + 1)
+    candidate_payload = await generated_image.read(20 * 1024 * 1024 + 1)
+    if max(len(source_payload), len(candidate_payload)) > 20 * 1024 * 1024:
+        raise ValueError("单张图片不能超过20 MB")
+    UPLOAD_RUNTIME.mkdir(parents=True, exist_ok=True)
+    task_id = uuid.uuid4().hex
+    source_path = UPLOAD_RUNTIME / f"{task_id}_source{supported[source_image.content_type]}"
+    candidate_path = UPLOAD_RUNTIME / f"{task_id}_candidate{supported[generated_image.content_type]}"
+    try:
+        source_path.write_bytes(source_payload)
+        candidate_path.write_bytes(candidate_payload)
+        month = capture_month if 1 <= capture_month <= 12 else None
+        confidence = max(0, min(100, int(confidence)))
+        with PLANNER_REALISTIC_GENERATION_LOCK:
+            try:
+                source = PLANNER_ADAPTER.analyze(source_path, planner_intent.strip()[:500], month, confidence)
+                candidate = PLANNER_ADAPTER.analyze(
+                    candidate_path, "本地验收人工导入的外部生成候选", month, confidence,
+                )
+            finally:
+                PLANNER_ADAPTER.close()
+            acceptance = lambda _state: _external_candidate_acceptance(source_path, candidate_path, source, candidate)
+            overlay = lambda _state: tool_result("planning_overlay", "PASS", artifacts={
+                "overlay_available": bool(source.get("overlay_png_base64")),
+            })
+            runtime = PlannerAgentRuntime(PlannerToolRegistry([
+                PlannerAgentTool("generation_acceptance", "Locally validate a human-imported candidate.", {}, {}, acceptance, requires_gpu=True),
+                PlannerAgentTool("planning_overlay", "Retain the deterministic planning overlay.", {}, {}, overlay),
+            ]), max_steps=3, timeout_seconds=1800)
+            agent = runtime.run({
+                "task_id": task_id, "goal": "validate_generation",
+                "selected_action": "generation_acceptance",
+                "observations": {"candidate_source": "human_imported_external_image"},
+            })
+        response = attach_reference_thermal_estimate(
+            {
+                **source, **agent,
+                "source": "human_imported_external_image",
+                "external_request_made": False,
+                "planner_review_required": not agent["automatic_acceptance"],
+                "claim_boundary": "人工外部生成候选；不是现场实测，也不是因果热效益验证。",
+            }, max(6, min(18, int(scenario_hour))),
+        )
+        if agent["automatic_acceptance"]:
+            response["generated_panorama_png_base64"] = base64.b64encode(candidate_payload).decode("ascii")
+        return response
+    finally:
+        source_path.unlink(missing_ok=True)
+        candidate_path.unlink(missing_ok=True)
 
 
 @app.post("/api/planner/review-upload-no-intervention")

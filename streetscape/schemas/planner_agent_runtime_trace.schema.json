@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbanshade.local/schemas/planner-agent-runtime-trace-v1.json",
+  "title": "UrbanShade bounded planner Agent runtime result",
+  "type": "object",
+  "required": [
+    "task_id", "final_state", "selected_action", "final_action", "stop_reason",
+    "generation_unlocked", "generation_available", "automatic_acceptance",
+    "tool_trace", "artifacts", "warnings"
+  ],
+  "properties": {
+    "task_id": {"type": "string", "minLength": 1},
+    "final_state": {"enum": ["COMPLETED", "SAFE_STOP"]},
+    "selected_action": {
+      "enum": [
+        "assess_only", "motor_only", "leaf_off", "directional_source_required",
+        "directional_perspective_plan", "tree_layout", "tree_first_then_facility_review", "generation_acceptance",
+        "tree_generation_with_acceptance"
+      ]
+    },
+    "final_action": {
+      "enum": [
+        "assess_only", "motor_only", "planner_review", "directional_perspective_plan",
+        "planning_overlay", "generation_accepted"
+      ]
+    },
+    "stop_reason": {"type": "string", "minLength": 1},
+    "generation_unlocked": {"type": "boolean"},
+    "generation_available": {"type": "boolean"},
+    "automatic_acceptance": {"type": "boolean"},
+    "artifacts": {"type": "object"},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "tool_trace": {
+      "type": "array", "minItems": 2, "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": [
+          "step", "phase", "tool", "status", "decision_summary", "input_summary",
+          "observations", "artifacts", "warnings", "error", "agent_state",
+          "generation_unlocked"
+        ],
+        "properties": {
+          "step": {"type": "integer", "minimum": 1, "maximum": 8},
+          "phase": {"enum": ["observe", "act_verify", "replan"]},
+          "tool": {"type": "string", "minLength": 1},
+          "status": {"enum": ["PASS", "FAIL", "UNCERTAIN", "BLOCKED"]},
+          "decision_summary": {"type": "string", "minLength": 1},
+          "input_summary": {"type": "object"},
+          "observations": {"type": "object"},
+          "artifacts": {"type": "object"},
+          "warnings": {"type": "array", "items": {"type": "string"}},
+          "error": {"type": ["string", "null"]},
+          "agent_state": {"type": "string", "minLength": 1},
+          "generation_unlocked": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": true
+}
