@@ -223,7 +223,7 @@ def main() -> int:
         "test_views": list(config["partitions"]["test_views"]), "targets": list(TARGETS),
         "seeds": config["training"]["seeds"], "proposed_seeds": config["proposed"]["seeds"],
         "bootstrap_replicates": config["bootstrap"]["replicates"], "bootstrap_unit": config["bootstrap"]["unit"],
-        "tree_algorithm": config["training"]["tree_algorithm"], "tree_randomness": "deterministic",
+        "tree_algorithms": [config["training"]["tree_algorithm"], "xgboost.XGBRegressor 3.2.0"],
         "static_tree_preprocessing": f"direction mean/std pooling; {config['training']['static_pca_components']}-component randomized PCA fit on Train only",
         "neural_preprocessing": "all normalization moments fit on Train only",
         "model_selection": "MLP early stopping on validation_unseen_points_unseen_weather only; Test never used for selection",

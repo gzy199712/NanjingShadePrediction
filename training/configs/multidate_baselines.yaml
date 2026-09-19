@@ -45,6 +45,9 @@ training:
   tree_learning_rate: 0.05
   tree_max_leaf_nodes: 31
   static_pca_components: 128
+  xgboost_n_estimators: 1000
+  xgboost_max_depth: 6
+  xgboost_early_stopping_rounds: 30
 
 outputs:
   prediction_root: training/predictions/multidate_baselines
@@ -79,6 +82,12 @@ models:
     group: tree
   - id: static_hgbr
     label: Static-only HGBR
+    group: tree
+  - id: weather_xgboost
+    label: Weather-only XGBoost
+    group: tree
+  - id: static_xgboost
+    label: Static-only XGBoost
     group: tree
   - id: multimodal_mlp
     label: Multimodal MLP

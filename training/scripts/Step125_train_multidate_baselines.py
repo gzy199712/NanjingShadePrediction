@@ -15,6 +15,7 @@ import pandas as pd
 import torch
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.decomposition import PCA
+from xgboost import XGBRegressor
 
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -30,7 +31,7 @@ from training.src.trainer import atomic_torch_save  # noqa: E402
 
 
 NEURAL_MODELS = ("multimodal_mlp", "directional_mlp")
-TREE_MODELS = ("weather_hgbr", "static_hgbr")
+TREE_MODELS = ("weather_hgbr", "static_hgbr", "weather_xgboost", "static_xgboost")
 
 
 def parse_args() -> argparse.Namespace:
@@ -39,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", required=True, choices=("check", "run"))
     parser.add_argument("--approved-by-user", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--models", nargs="+", choices=TREE_MODELS + NEURAL_MODELS)
     return parser.parse_args()
 
 
@@ -198,7 +200,7 @@ def aggregate_target(frame: pd.DataFrame, key: str, target: np.ndarray, size: in
 
 
 def tree_features(model_id: str, data: Any, specs: Any) -> tuple[np.ndarray, str]:
-    if model_id == "weather_hgbr":
+    if model_id.startswith("weather_"):
         return data.dynamic[specs.dynamic_fields].to_numpy(np.float32), "dynamic_condition_row"
     directional = np.asarray(data.dino_window, dtype=np.float32)
     pooled = np.concatenate((directional.mean(1), directional.std(1)), axis=1)
@@ -209,7 +211,7 @@ def train_trees(model_id: str, seed: int, train: pd.DataFrame, validation: pd.Da
     settings = config["training"]
     features, key = tree_features(model_id, data, specs)
     pca = None
-    if model_id == "static_hgbr":
+    if model_id.startswith("static_"):
         train_points = np.unique(rows(train, key))
         semantic_count = len(specs.semantic_fields)
         pca = PCA(n_components=int(settings["static_pca_components"]), svd_solver="randomized", random_state=seed)
@@ -220,11 +222,20 @@ def train_trees(model_id: str, seed: int, train: pd.DataFrame, validation: pd.Da
     validation_rmse: dict[str, float] = {}
     for name, target in targets.items():
         indices, averages, weights = aggregate_target(train, key, target, len(features))
-        model = HistGradientBoostingRegressor(
-            max_iter=int(settings["tree_max_iter"]), learning_rate=float(settings["tree_learning_rate"]),
-            max_leaf_nodes=int(settings["tree_max_leaf_nodes"]), early_stopping=False, loss="squared_error",
-        )
-        model.fit(features[indices], averages, sample_weight=weights)
+        if model_id.endswith("xgboost"):
+            validation_indices, validation_averages, validation_weights = aggregate_target(validation, key, target, len(features))
+            model = XGBRegressor(
+                n_estimators=int(settings["xgboost_n_estimators"]), max_depth=int(settings["xgboost_max_depth"]),
+                learning_rate=float(settings["tree_learning_rate"]), subsample=0.9, colsample_bytree=0.9,
+                random_state=seed, tree_method="hist", early_stopping_rounds=int(settings["xgboost_early_stopping_rounds"]),
+            )
+            model.fit(features[indices], averages, sample_weight=weights, eval_set=[(features[validation_indices], validation_averages)], sample_weight_eval_set=[validation_weights], verbose=False)
+        else:
+            model = HistGradientBoostingRegressor(
+                max_iter=int(settings["tree_max_iter"]), learning_rate=float(settings["tree_learning_rate"]),
+                max_leaf_nodes=int(settings["tree_max_leaf_nodes"]), early_stopping=False, loss="squared_error",
+            )
+            model.fit(features[indices], averages, sample_weight=weights)
         prediction = model.predict(features[rows(validation, key)])
         truth = target[rows(validation, "label_row")]
         validation_rmse[name] = float(np.sqrt(np.mean((prediction - truth) ** 2)))
@@ -232,8 +243,9 @@ def train_trees(model_id: str, seed: int, train: pd.DataFrame, validation: pd.Da
     path = resolve(settings["checkpoint_root"]) / model_id / f"seed_{seed}.pkl"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("wb") as handle:
-        pickle.dump({"model_id": model_id, "seed": seed, "models": models, "pca": pca, "validation_rmse": validation_rmse, "algorithm": settings["tree_algorithm"], "test_records_used": 0}, handle)
-    randomness = "randomized train-only PCA" if pca is not None else "deterministic HGBR; seed registry retained for fair three-run accounting"
+        algorithm = "xgboost.XGBRegressor" if model_id.endswith("xgboost") else settings["tree_algorithm"]
+        pickle.dump({"model_id": model_id, "seed": seed, "models": models, "pca": pca, "validation_rmse": validation_rmse, "algorithm": algorithm, "test_records_used": 0}, handle)
+    randomness = "randomized train-only PCA" if pca is not None else ("seeded row/column subsampling" if model_id.endswith("xgboost") else "deterministic HGBR; seed registry retained for fair three-run accounting")
     return {"model_id": model_id, "seed": seed, "checkpoint": str(path), "validation_rmse": validation_rmse, "algorithm_randomness": randomness, "static_pca_components": int(settings["static_pca_components"]) if pca is not None else None}
 
 
@@ -261,7 +273,7 @@ def main() -> int:
     report_root = resolve(config["outputs"]["report_root"])
     report_root.mkdir(parents=True, exist_ok=True)
     if args.mode == "check":
-        report = {"step": 125, "status": "PASS", "train_records": len(train), "validation_records": len(validation), "test_records_used": 0, "seeds": config["training"]["seeds"], "tree_algorithm": config["training"]["tree_algorithm"], "cuda": torch.cuda.is_available()}
+        report = {"step": 125, "status": "PASS", "train_records": len(train), "validation_records": len(validation), "test_records_used": 0, "seeds": config["training"]["seeds"], "models": args.models or list(TREE_MODELS + NEURAL_MODELS), "tree_algorithms": [config["training"]["tree_algorithm"], "xgboost.XGBRegressor 3.2.0"], "cuda": torch.cuda.is_available()}
         atomic_json(report_root / "step125_check.json", report)
         print(json.dumps(report, indent=2))
         return 0
@@ -269,17 +281,20 @@ def main() -> int:
         raise PermissionError("--approved-by-user is required")
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for neural baselines")
-    summary_path = report_root / "step125_training_summary.json"
+    selected = set(args.models or TREE_MODELS + NEURAL_MODELS)
+    suffix = "_" + "_".join(args.models) if args.models else ""
+    summary_path = report_root / f"step125_training_summary{suffix}.json"
     if summary_path.exists() and not args.overwrite:
         raise FileExistsError("Step125 outputs exist; use --overwrite")
     started = time.perf_counter()
     results: list[dict[str, Any]] = []
-    train_means(train, data, specs, config)
+    if not args.models:
+        train_means(train, data, specs, config)
     scalers = fit_scalers(train, data, specs)
-    for model_id in TREE_MODELS:
+    for model_id in (model for model in TREE_MODELS if model in selected):
         for seed in config["training"]["seeds"]:
             results.append(train_trees(model_id, int(seed), train, validation, data, specs, config))
-    for model_id in NEURAL_MODELS:
+    for model_id in (model for model in NEURAL_MODELS if model in selected):
         for seed in config["training"]["seeds"]:
             results.append(train_neural(model_id, int(seed), train, validation, data, specs, scalers, config))
     summary = {"step": 125, "status": "COMPLETE", "elapsed_seconds": time.perf_counter() - started, "train_records": len(train), "validation_records": len(validation), "test_records_used": 0, "results": results}

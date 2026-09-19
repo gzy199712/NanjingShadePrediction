@@ -159,7 +159,7 @@ UTCI `-0.63 °C`。
 
 ### 强基线比较
 
-可训练基线使用种子 42、52、62；Mean baseline 为确定性模型；Proposed 使用现有正式五种子模型集成。环境中未安装 XGBoost 或 LightGBM，因此树模型实际使用 sklearn `HistGradientBoostingRegressor`，Static-only 的 128 维 PCA 仅在 train 分区拟合。
+可训练基线使用种子 42、52、62；Mean baseline 为确定性模型；Proposed 使用现有正式五种子模型集成。树模型同时比较 sklearn `HistGradientBoostingRegressor` 和 `XGBRegressor 3.2.0`；Static-only 的 128 维 PCA 仅在 train 分区拟合，XGBoost 使用 validation early stopping。
 
 | Model | Shade MAE | Shade RMSE | Shade R² | Tmrt MAE | Tmrt RMSE | Tmrt R² | UTCI MAE | UTCI RMSE | UTCI R² |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -167,6 +167,8 @@ UTCI `-0.63 °C`。
 | Hourly train mean | 0.1875 | 0.2361 | 0.3025 | 4.5830 | 5.9017 | 0.7955 | 1.0436 | 1.3407 | 0.9011 |
 | Weather-only HGBR | 0.1875 | 0.2363 | 0.3017 | 3.6956 | 5.0082 | 0.8527 | 0.8390 | 1.1289 | 0.9299 |
 | Static-only HGBR | 0.1838 | 0.2363 | 0.3015 | 10.6209 | 12.7412 | 0.0466 | 2.3953 | 2.8626 | 0.5492 |
+| Weather-only XGBoost | 0.1875 | 0.2361 | 0.3025 | 3.3203 | 4.6917 | 0.8707 | 0.7576 | 1.0640 | 0.9377 |
+| Static-only XGBoost | 0.1836 | 0.2361 | 0.3027 | 10.6201 | 12.7369 | 0.0473 | 2.3951 | 2.8617 | 0.5495 |
 | Multimodal MLP | 0.1244 | 0.1691 | 0.6422 | 2.5739 | 3.4034 | 0.9320 | 0.5876 | 0.7779 | 0.9667 |
 | Directional MLP | 0.1249 | 0.1685 | 0.6448 | 2.6023 | 3.4285 | 0.9310 | 0.5939 | 0.7832 | 0.9663 |
 | Proposed (5-seed) | 0.1092 | 0.1527 | 0.7081 | 2.1827 | 3.0147 | 0.9466 | 0.4989 | 0.6889 | 0.9739 |

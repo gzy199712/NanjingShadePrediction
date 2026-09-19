@@ -33,6 +33,7 @@ TARGETS = {
     "tmrt_celsius": ("tmrt_true", "tmrt_pred"),
     "utci_celsius": ("utci_true", "utci_pred"),
 }
+TREE_MODELS = ("weather_hgbr", "static_hgbr", "weather_xgboost", "static_xgboost")
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,6 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", required=True, choices=("check", "run"))
     parser.add_argument("--approved-by-user", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--models", nargs="+", choices=TREE_MODELS)
     return parser.parse_args()
 
 
@@ -141,6 +143,36 @@ def save_model_predictions(model_id: str, view: str, predictions: dict[str, pd.D
         metrics.extend(metric_rows(model_id, "ensemble", view, ensemble))
 
 
+def evaluate_selected_trees(model_ids: list[str], views: dict[str, pd.DataFrame], data: Any, specs: Any, config: dict[str, Any], checkpoint_root: Path, prediction_root: Path, metrics_path: Path) -> dict[str, Any]:
+    raw = {"weather": tree_features("weather_hgbr", data, specs)[0], "static": tree_features("static_hgbr", data, specs)[0]}
+    payloads: dict[str, dict[int, Any]] = {}
+    for model_id in model_ids:
+        payloads[model_id] = {}
+        for seed in config["training"]["seeds"]:
+            with (checkpoint_root / model_id / f"seed_{seed}.pkl").open("rb") as handle:
+                payload = pickle.load(handle)
+            if model_id.startswith("static_"):
+                semantic_count = len(specs.semantic_fields)
+                source = raw["static"]
+                payload["features"] = np.concatenate((source[:, :semantic_count], payload["pca"].transform(source[:, semantic_count:])), axis=1)
+            payloads[model_id][int(seed)] = payload
+    existing = pd.read_csv(metrics_path, dtype={"seed": str}) if metrics_path.is_file() else pd.DataFrame()
+    metrics = [] if existing.empty else existing.loc[~existing["model_id"].isin(model_ids)].to_dict("records")
+    for view, manifest in views.items():
+        base, weather = base_frame(manifest, data, specs, view)
+        for model_id in model_ids:
+            key = "dynamic_condition_row" if model_id.startswith("weather_") else "static_feature_row"
+            model_predictions = {}
+            for seed, payload in payloads[model_id].items():
+                matrix = payload.get("features", raw["weather"])
+                x = matrix[rows(manifest, key)]
+                models = payload["models"]
+                model_predictions[str(seed)] = add_utci(base, models["shade"].predict(x), models["tmrt"].predict(x), weather, f"{view} {model_id} seed {seed} UTCI")
+            save_model_predictions(model_id, view, model_predictions, prediction_root, metrics)
+    atomic_csv(metrics_path, metrics)
+    return {"step": 126, "status": "COMPLETE", "models": model_ids, "test_views": {name: len(frame) for name, frame in views.items()}, "metric_rows": len(metrics), "test_evaluation_runs": 1, "utci": implementation_metadata()}
+
+
 def main() -> int:
     args = parse_args()
     config_path = args.config.resolve()
@@ -152,9 +184,12 @@ def main() -> int:
     report_root = resolve(config["outputs"]["report_root"])
     report_root.mkdir(parents=True, exist_ok=True)
     checkpoint_root = resolve(config["training"]["checkpoint_root"])
-    required = [checkpoint_root / "mean_statistics.json"]
-    required += [checkpoint_root / model / f"seed_{seed}{'.pkl' if model.endswith('hgbr') else '.pt'}" for model in ("weather_hgbr", "static_hgbr", "multimodal_mlp", "directional_mlp") for seed in config["training"]["seeds"]]
-    required += [resolve(config["proposed"]["prediction_root"]) / f"{view}_predictions.csv" for view in views]
+    if args.models:
+        required = [checkpoint_root / model / f"seed_{seed}.pkl" for model in args.models for seed in config["training"]["seeds"]]
+    else:
+        required = [checkpoint_root / "mean_statistics.json"]
+        required += [checkpoint_root / model / f"seed_{seed}{'.pkl' if model in TREE_MODELS else '.pt'}" for model in ("weather_hgbr", "static_hgbr", "weather_xgboost", "static_xgboost", "multimodal_mlp", "directional_mlp") for seed in config["training"]["seeds"]]
+        required += [resolve(config["proposed"]["prediction_root"]) / f"{view}_predictions.csv" for view in views]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise FileNotFoundError("Missing frozen inputs: " + "; ".join(missing))
@@ -166,19 +201,24 @@ def main() -> int:
     if not args.approved_by_user:
         raise PermissionError("--approved-by-user is required")
     metrics_path = resolve(config["outputs"]["metrics_root"]) / "per_seed_test_metrics.csv"
+    prediction_root = resolve(config["outputs"]["prediction_root"])
+    if args.models:
+        summary = evaluate_selected_trees(args.models, views, data, specs, config, checkpoint_root, prediction_root, metrics_path)
+        atomic_json(report_root / ("step126_evaluation_summary_" + "_".join(args.models) + ".json"), summary)
+        print(json.dumps(summary, indent=2))
+        return 0
     if metrics_path.exists() and not args.overwrite:
         raise FileExistsError("Step126 outputs exist; use --overwrite")
-    prediction_root = resolve(config["outputs"]["prediction_root"])
     means = json.loads((checkpoint_root / "mean_statistics.json").read_text(encoding="utf-8"))
     static_features, _ = tree_features("static_hgbr", data, specs)
     weather_features, _ = tree_features("weather_hgbr", data, specs)
     tree_models: dict[str, dict[int, Any]] = {}
-    for model_id in ("weather_hgbr", "static_hgbr"):
+    for model_id in TREE_MODELS:
         tree_models[model_id] = {}
         for seed in config["training"]["seeds"]:
             with (checkpoint_root / model_id / f"seed_{seed}.pkl").open("rb") as handle:
                 payload = pickle.load(handle)
-                if model_id == "static_hgbr":
+                if model_id.startswith("static_"):
                     semantic_count = len(specs.semantic_fields)
                     payload["features"] = np.concatenate((static_features[:, :semantic_count], payload["pca"].transform(static_features[:, semantic_count:])), axis=1)
                 tree_models[model_id][int(seed)] = payload
@@ -192,7 +232,7 @@ def main() -> int:
         hourly_shade = manifest["hour"].astype(str).map({key: value["shade"] for key, value in means["hourly"].items()}).to_numpy(float)
         hourly_tmrt = manifest["hour"].astype(str).map({key: value["tmrt"] for key, value in means["hourly"].items()}).to_numpy(float)
         save_model_predictions("mean_hourly", view, {"deterministic": add_utci(base, hourly_shade, hourly_tmrt, weather, f"{view} mean_hourly UTCI")}, prediction_root, metrics)
-        for model_id, feature_matrix, key in (("weather_hgbr", weather_features, "dynamic_condition_row"), ("static_hgbr", static_features, "static_feature_row")):
+        for model_id, feature_matrix, key in (("weather_hgbr", weather_features, "dynamic_condition_row"), ("static_hgbr", static_features, "static_feature_row"), ("weather_xgboost", weather_features, "dynamic_condition_row"), ("static_xgboost", static_features, "static_feature_row")):
             model_predictions = {}
             for seed, payload in tree_models[model_id].items():
                 models = payload["models"]
